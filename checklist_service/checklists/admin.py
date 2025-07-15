@@ -67,7 +67,7 @@ class ChecklistItemOptionAdmin(admin.ModelAdmin):
 @admin.register(ChecklistItemSubmission)
 class ChecklistItemSubmissionAdmin(admin.ModelAdmin):
     list_display = [
-        'id', 'checklist_item', 'status', 'maker_id', 'supervisor_id', 'checker_id', 'created_at'
+        'id', 'checklist_item', 'status', 'maker_id', 'supervisor_id', 'checker_id', 'created_at' ,'attempts'
     ]
     search_fields = [
         'id', 'checklist_item__title', 'maker_id', 'supervisor_id', 'checker_id'

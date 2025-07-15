@@ -1,6 +1,7 @@
 import requests
+from django.db.models import Q, Exists, OuterRef,Subquery
 from .models import Checklist
-from django.db.models import Q
+from django.db.models import F
 from rest_framework import viewsets,permissions
 from .models import Checklist, ChecklistItem, ChecklistItemSubmission, ChecklistItemOption
 from .serializers import ChecklistSerializer, ChecklistItemSerializer, ChecklistItemSubmissionSerializer,ChecklistSerializer,ChecklistItemOptionSerializer,ChecklistWithItemsAndFilteredSubmissionsSerializer,ChecklistWithItemsAndFilteredSubmissionsSerializer,ChecklistWithNestedItemsSerializer,ChecklistWithItemsAndPendingSubmissionsSerializer
@@ -8,11 +9,221 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
+from django.db.models import Case, When, IntegerField
+from .serializers import ChecklistWithItemsAndSubmissionsSerializer
+from django.db import models
+from rest_framework.permissions import IsAuthenticated
+
+
+
+class ChecklistRoleAnalyticsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_id = request.query_params.get("user_id") or request.user.id
+        project_id = request.query_params.get("project_id")
+        role = request.query_params.get("role")
+
+        if not user_id or not project_id or not role:
+            return Response({"detail": "user_id, project_id, and role are required"}, status=400)
+
+        role_upper = role.upper()
+        if role_upper == "SUPERVISOR":
+            data = get_supervisor_analytics(user_id, project_id)
+        elif role_upper == "MAKER":
+            data = get_maker_analytics(user_id, project_id)
+        elif role_upper == "CHECKER":
+            data = get_checker_analytics(user_id, project_id)
+        elif role_upper == "INTIALIZER":
+            data = get_intializer_analytics(user_id, project_id, request)
+        else:
+            return Response({"detail": f"Role '{role}' not supported"}, status=400)
+
+        return Response(data, status=200)
+
+
+
+def get_intializer_analytics(user_id, project_id, request):
+    # Use same logic as your CHecklist_View_FOr_INtializer, but just count the checklists
+
+    # Fetch user accesses from USER_SERVICE (external call)
+    USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
+    token = None
+    auth_header = request.headers.get("Authorization")
+    if auth_header:
+        token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    try:
+        resp = requests.get(
+            USER_SERVICE_URL,
+            params={"user_id": user_id, "project_id": project_id},
+            timeout=5,
+            headers=headers
+        )
+        if resp.status_code != 200:
+            return {"detail": "Could not fetch user access"}
+        accesses = resp.json()
+    except Exception as e:
+        return {"detail": "User service error", "error": str(e)}
+
+    q = Q()
+    for access in accesses:
+        cat_q = Q()
+        if access.get('category'):
+            cat_q &= Q(category=access['category'])
+            for i in range(1, 7):
+                key = f'CategoryLevel{i}'
+                if access.get(key) is not None:
+                    cat_q &= Q(**{f'category_level{i}': access[key]})
+                else:
+                    break
+
+        loc_q = Q()
+        if access.get('flat_id'):
+            loc_q &= Q(flat_id=access['flat_id'])
+        elif access.get('zone_id'):
+            loc_q &= Q(zone_id=access['zone_id'])
+        elif access.get('building_id'):
+            loc_q &= Q(building_id=access['building_id'])
+
+        q |= (cat_q & loc_q)
+
+    checklists = Checklist.objects.filter(project_id=project_id)
+    if q:
+        checklists = checklists.filter(q).distinct()
+    else:
+        checklists = Checklist.objects.none()
+
+    # Count how many can be initialized (status='not_started')
+    not_started_count = checklists.filter(status='not_started').count()
+    total_accessible = checklists.count()
+
+    return {
+        "not_started_count": not_started_count,
+        "total_accessible_checklists": total_accessible,
+    }
+
+
+def get_supervisor_analytics(user_id, project_id):
+    latest_submission_subq = ChecklistItemSubmission.objects.filter(
+        checklist_item=OuterRef('pk')
+    ).order_by('-attempts', '-created_at').values('id')[:1]
+
+    base_items = ChecklistItem.objects.filter(
+        checklist__project_id=project_id,
+        status="pending_for_supervisor"
+    ).annotate(
+        latest_submission_id=Subquery(latest_submission_subq)
+    )
+
+    assigned_to_me_count = base_items.filter(
+        submissions__id=F('latest_submission_id'),
+        submissions__supervisor_id=user_id,
+        submissions__status="pending_supervisor"
+    ).distinct().count()
+
+    available_for_me_count = base_items.filter(
+        submissions__id=F('latest_submission_id'),
+        submissions__supervisor_id__isnull=True,
+        submissions__status="pending_supervisor"
+    ).distinct().count()
+    return {
+        "pending_for_me_count": assigned_to_me_count,
+        "available_for_me_count": available_for_me_count,
+    }
+
+def get_maker_analytics(user_id, project_id):
+    from .models import ChecklistItem, ChecklistItemSubmission
+
+    latest_submission_subq = ChecklistItemSubmission.objects.filter(
+        checklist_item=OuterRef('pk')
+    ).order_by('-attempts', '-created_at').values('id')[:1]
+
+    base_items = ChecklistItem.objects.filter(
+        checklist__project_id=project_id,
+        status="pending_for_maker"
+    ).annotate(
+        latest_submission_id=Subquery(latest_submission_subq)
+    )
+
+    assigned_to_me_count = base_items.filter(
+        submissions__id=F('latest_submission_id'),
+        submissions__maker_id=user_id,
+        submissions__status="created"
+    ).distinct().count()
+
+    available_for_me_count = base_items.filter(
+        submissions__id=F('latest_submission_id'),
+        submissions__maker_id__isnull=True,
+        submissions__status="created"
+    ).distinct().count()
+
+    return {
+        "assigned_to_me_count": assigned_to_me_count,
+        "available_for_me_count": available_for_me_count,
+    }
+
+
+def get_checker_analytics(user_id, project_id):
+    from .models import Checklist, ChecklistItem
+
+    assigned_item_exists = ChecklistItem.objects.filter(
+        checklist=OuterRef('pk'),
+        status="pending_for_inspector",
+        submissions__checker_id=user_id,
+        submissions__status="pending_checker"
+    )
+    available_item_exists = ChecklistItem.objects.filter(
+        checklist=OuterRef('pk'),
+        status="pending_for_inspector",
+        submissions__checker_id__isnull=True
+    )
+
+    base_qs = Checklist.objects.filter(project_id=project_id)
+    assigned_to_me_count = base_qs.annotate(
+        has_assigned=Exists(assigned_item_exists)
+    ).filter(has_assigned=True).count()
+
+    available_for_me_count = base_qs.annotate(
+        has_available=Exists(available_item_exists)
+    ).filter(has_available=True).count()
+
+    return {
+        "assigned_to_me_count": assigned_to_me_count,
+        "available_for_me_count": available_for_me_count,
+    }
+
+
+
+
+class ChecklistByCreatorAndProjectAPIView(APIView):
+    """
+    Get all checklists filtered by created_by_id and/or project_id.
+    GET params: ?created_by_id=123&project_id=99
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        created_by_id = request.query_params.get("created_by_id")
+        project_id = request.query_params.get("project_id")
+
+        qs = Checklist.objects.all()
+        if created_by_id:
+            qs = qs.filter(created_by_id=created_by_id)
+        if project_id:
+            qs = qs.filter(project_id=project_id)
+
+        serializer = ChecklistSerializer(qs, many=True)
+        return Response(serializer.data, status=200)
+
 
 
 class CHecklist_View_FOr_INtializer(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "http://192.168.16.214:8000/api/user-access/"
+    USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
 
     def get(self, request):
         user_id = request.user.id
@@ -65,18 +276,24 @@ class CHecklist_View_FOr_INtializer(APIView):
 
             q |= (cat_q & loc_q)
 
-        checklists = Checklist.objects.filter(project_id=project_id, status='not_started')
-        if q:  
+        checklists = Checklist.objects.filter(project_id=project_id)
+        print(checklists)
+        if q:
             checklists = checklists.filter(q).distinct()
         else:
             checklists = Checklist.objects.none()
+        print(checklists)
+        checklists = checklists.annotate(
+            is_not_started=Case(
+                When(status='not_started', then=1),
+                default=0,
+                output_field=IntegerField()
+            )
+        ).order_by('-is_not_started', 'status', 'id')
 
         serializer = ChecklistSerializer(checklists, many=True)
         print(serializer.data)
         return Response(serializer.data, status=200)
-
-
-
 
 
 
@@ -86,7 +303,7 @@ class IntializeChechklistView(APIView):
             checklist = Checklist.objects.get(id=checklist_id, status="not_started")
         except Checklist.DoesNotExist:
             return Response(
-                {"error": "Checklist not found or not in 'not_started' status."},
+                {"error": "Checklist not found or All ready Offered."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -94,7 +311,7 @@ class IntializeChechklistView(APIView):
         checklist.save()
 
         items_qs = checklist.items.filter(status="not_started")
-        updated_count = items_qs.update(status="in_progress")
+        updated_count = items_qs.update(status="pending_for_inspector")
 
         return Response(
             {
@@ -106,22 +323,22 @@ class IntializeChechklistView(APIView):
 
 
 
+
 class CheckerInprogressAccessibleChecklists(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "http://192.168.16.214:8000/api/user-access/"
+    permission_classes = [IsAuthenticated]
+    USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
 
     def get(self, request):
         user_id = request.user.id
         project_id = request.query_params.get("project_id")
-
         if not user_id or not project_id:
             return Response({"detail": "user_id and project_id required."}, status=400)
 
+        # --- Fetch user access
         token = None
         auth_header = request.headers.get("Authorization")
         if auth_header:
             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-
         headers = {}
         if token:
             headers["Authorization"] = f"Bearer {token}"
@@ -150,7 +367,6 @@ class CheckerInprogressAccessibleChecklists(APIView):
                         cat_q &= Q(**{f'category_level{i}': access[key]})
                     else:
                         break
-
             loc_q = Q()
             if access.get('flat_id'):
                 loc_q &= Q(flat_id=access['flat_id'])
@@ -158,36 +374,69 @@ class CheckerInprogressAccessibleChecklists(APIView):
                 loc_q &= Q(zone_id=access['zone_id'])
             elif access.get('building_id'):
                 loc_q &= Q(building_id=access['building_id'])
-
             q |= (cat_q & loc_q)
 
-        checklists = Checklist.objects.filter(project_id=project_id, status='in_progress')
-        if q:  
-            checklists = checklists.filter(q).distinct()
+
+        assigned_item_exists = ChecklistItem.objects.filter(
+            checklist=OuterRef('pk'),
+            status="pending_for_inspector",
+            submissions__checker_id=user_id,
+            submissions__status="pending_checker"
+        )
+
+
+        available_item_exists = ChecklistItem.objects.filter(
+            checklist=OuterRef('pk'),
+            status="pending_for_inspector",
+            # submissions__status="pending_checker",
+            submissions__checker_id__isnull=True
+        )
+
+        base_qs = Checklist.objects.filter(project_id=project_id)
+        if q:
+            base_qs = base_qs.filter(q).distinct()
         else:
-            checklists = Checklist.objects.none()
+            base_qs = Checklist.objects.none()
 
-        serializer = ChecklistSerializer(checklists, many=True)
-        return Response(serializer.data, status=200)
-    
+        assigned_to_me = base_qs.annotate(
+            has_assigned=Exists(assigned_item_exists)
+        ).filter(has_assigned=True)
 
+        available_for_me = base_qs.annotate(
+            has_available=Exists(available_item_exists)
+        ).filter(has_available=True)
+
+        from .serializers import ChecklistWithItemsAndSubmissionsSerializer  # adjust import as needed
+
+        response = {
+            "assigned_to_me": ChecklistWithItemsAndSubmissionsSerializer(assigned_to_me, many=True).data,
+            "available_for_me": ChecklistWithItemsAndSubmissionsSerializer(available_for_me, many=True).data
+        }
+        print(response)
+        return Response(response, status=200)
+
+
+
+
+class ChecklistItemsByChecklistAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated] 
+
+    def get(self, request, checklist_id):
+        items = ChecklistItem.objects.filter(checklist_id=checklist_id)
+        serializer = ChecklistItemSerializer(items, many=True)
+        print(serializer.data,'this is data')
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
 
 from django.utils import timezone
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import permissions
-from django.utils import timezone
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import permissions
 
 class VerifyChecklistItemForCheckerNSupervisorAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def patch(self, request):
+        print("PATCH data:", request.data)
         checklist_item_id = request.data.get('checklist_item_id')
         role = request.data.get('role')
         option_id = request.data.get('option_id')
@@ -195,48 +444,71 @@ class VerifyChecklistItemForCheckerNSupervisorAPIView(APIView):
         check_photo = request.FILES.get('check_photo', None)
 
         if not checklist_item_id or not role or not option_id:
+            print("Missing required fields.", checklist_item_id, role, option_id)
             return Response({"detail": "checklist_item_id, role, and option_id are required."}, status=400)
 
         try:
             item = ChecklistItem.objects.get(id=checklist_item_id)
+            print("Fetched ChecklistItem:", item)
         except ChecklistItem.DoesNotExist:
+            print(f"ChecklistItem not found for id={checklist_item_id}")
             return Response({"detail": "ChecklistItem not found."}, status=404)
 
         try:
             option = ChecklistItemOption.objects.get(id=option_id)
+            print("Fetched ChecklistItemOption:", option)
         except ChecklistItemOption.DoesNotExist:
+            print(f"ChecklistItemOption not found for id={option_id}")
             return Response({"detail": "ChecklistItemOption not found."}, status=404)
 
         checklist = item.checklist
+        print("Related Checklist:", checklist)
 
-        # ========== CHECKER LOGIC ==========
+        # === CHECKER LOGIC ===
         if role.lower() == "checker":
-            # 1. Find old pending submission for this checker, or create new if first time
+            print("Role: CHECKER")
             submission = item.submissions.filter(
                 checker_id=request.user.id,
                 status="pending_checker"
-            ).order_by('-created_at').first()
+            ).order_by('-attempts', '-created_at').first()
+            print("Existing checker submission:", submission)
 
             if not submission:
-                # First time: create submission and assign checker
-                submission = ChecklistItemSubmission.objects.create(
-                    checklist_item=item,
-                    checker_id=request.user.id,
-                    status="pending_checker"
-                )
-            # Update details
+                print("No existing submission found for checker, creating new...")
+                if item.submissions.count() == 0:
+                    submission = ChecklistItemSubmission.objects.create(
+                        checklist_item=item,
+                        checker_id=request.user.id,
+                        status="pending_checker",
+                        attempts=0
+                    )
+                    print("Created first submission:", submission)
+                else:
+                    max_attempts = item.submissions.aggregate(
+                        max_attempts=models.Max('attempts')
+                    )['max_attempts'] or 0
+                    submission = ChecklistItemSubmission.objects.create(
+                        checklist_item=item,
+                        checker_id=request.user.id,
+                        status="pending_checker",
+                        attempts=max_attempts + 1
+                    )
+                    print("Created new submission with incremented attempts:", submission)
+
+            print("Final submission for checker logic:", submission)
             submission.remarks = check_remark
             submission.checked_at = timezone.now()
-            # submission.selected_option = option
             if check_photo:
                 submission.inspector_photo = check_photo
 
             if option.choice == "P":  # YES
+                print("Option: YES (P)")
                 submission.status = "completed"
                 item.status = "completed"
                 submission.save(update_fields=["remarks", "checked_at", "inspector_photo", "status"])
                 item.save(update_fields=["status"])
                 if not checklist.items.exclude(status="completed").exists():
+                    print("All checklist items completed, marking checklist as completed.")
                     checklist.status = "completed"
                     checklist.save(update_fields=["status"])
                 return Response({
@@ -245,23 +517,26 @@ class VerifyChecklistItemForCheckerNSupervisorAPIView(APIView):
                     "item_status": item.status,
                     "submission_id": submission.id,
                     "submission_status": submission.status,
+                    "submission_attempts": submission.attempts,
                     "checklist_status": checklist.status
                 }, status=200)
 
             elif option.choice == "N":  # NO
+                print("Option: NO (N)")
                 submission.status = "rejected_by_checker"
                 submission.save(update_fields=["remarks", "checked_at", "inspector_photo", "status"])
                 item.status = "pending_for_maker"
                 item.save(update_fields=["status"])
-                # Create new submission for the same maker (if exists) else None
-                new_maker_id = submission.maker_id if submission.maker_id else None
-                new_supervisor_id = submission.supervisor_id if submission.supervisor_id else None
+                max_attempts = item.submissions.aggregate(
+                    max_attempts=models.Max('attempts')
+                )['max_attempts'] or 0
                 new_submission = ChecklistItemSubmission.objects.create(
                     checklist_item=item,
-                    maker_id=new_maker_id,
-                    checker_id=submission.checker_id,  # always assign to same checker for rework
-                    status="created",
-                    supervisor_id=new_supervisor_id
+                    maker_id=submission.maker_id,
+                    checker_id=submission.checker_id,
+                    supervisor_id=submission.supervisor_id,
+                    attempts=max_attempts + 1,
+                    status="created"
                 )
                 checklist.status = "work_in_progress"
                 checklist.save(update_fields=["status"])
@@ -272,30 +547,34 @@ class VerifyChecklistItemForCheckerNSupervisorAPIView(APIView):
                     "old_submission_id": submission.id,
                     "old_submission_status": submission.status,
                     "new_submission_id": new_submission.id,
+                    "new_submission_attempts": new_submission.attempts,
                     "checklist_status": checklist.status
                 }, status=200)
             else:
+                print("Invalid option for checker:", option.choice)
                 return Response({"detail": "Invalid option value for checker."}, status=400)
 
-        # ========== SUPERVISOR LOGIC ==========
+        # === SUPERVISOR LOGIC ===
         elif role.lower() == "supervisor":
-            # 1. Find old pending submission for this supervisor, or create new if first time
+            print("Role: SUPERVISOR")
             submission = item.submissions.filter(
                 supervisor_id=request.user.id,
                 status="pending_supervisor"
-            ).order_by('-created_at').first()
+            ).order_by('-attempts', '-created_at').first()
+            print("Supervisor's own submission:", submission)
 
             if not submission:
-                # Try to find a submission ready for supervisor but not yet assigned to a supervisor
+                print("Trying to find submission with no supervisor_id assigned...")
                 submission = item.submissions.filter(
                     checker_id__isnull=False,
                     maker_id__isnull=False,
                     status="pending_supervisor",
                     supervisor_id__isnull=True
-                ).order_by('-created_at').first()
+                ).order_by('-attempts', '-created_at').first()
+                print("Unassigned supervisor submission:", submission)
 
             if not submission:
-                # If STILL not found, raise error
+                print("No submission found for supervisor action.")
                 return Response({
                     "detail": (
                         "No submission found for supervisor action. "
@@ -306,14 +585,13 @@ class VerifyChecklistItemForCheckerNSupervisorAPIView(APIView):
                     "item_status": item.status
                 }, status=400)
 
-            # Update details
             submission.remarks = check_remark
             submission.supervised_at = timezone.now()
-            # submission.selected_option = option
             if check_photo:
                 submission.reviewer_photo = check_photo
 
             if option.choice == "P":  # YES
+                print("Supervisor approves (P)")
                 item.status = "pending_for_inspector"
                 submission.status = "pending_checker"
                 item.save(update_fields=["status"])
@@ -323,19 +601,25 @@ class VerifyChecklistItemForCheckerNSupervisorAPIView(APIView):
                     "item_id": item.id,
                     "item_status": item.status,
                     "submission_id": submission.id,
-                    "submission_status": submission.status
+                    "submission_status": submission.status,
+                    "submission_attempts": submission.attempts,
                 }, status=200)
 
             elif option.choice == "N":  # NO
+                print("Supervisor rejects (N)")
                 submission.status = "rejected_by_supervisor"
                 submission.save(update_fields=["remarks", "supervised_at", "reviewer_photo", "status"])
                 item.status = "pending_for_maker"
                 item.save(update_fields=["status"])
+                max_attempts = item.submissions.aggregate(
+                    max_attempts=models.Max('attempts')
+                )['max_attempts'] or 0
                 new_submission = ChecklistItemSubmission.objects.create(
                     checklist_item=item,
-                    maker_id=submission.maker_id,  # keep same maker for rework
-                    checker_id=submission.checker_id,  # keep same checker
-                    supervisor_id=submission.supervisor_id,  # keep same supervisor
+                    maker_id=submission.maker_id,
+                    checker_id=submission.checker_id,
+                    supervisor_id=submission.supervisor_id,
+                    attempts=max_attempts + 1,
                     status="created"
                 )
                 checklist.status = "work_in_progress"
@@ -347,44 +631,37 @@ class VerifyChecklistItemForCheckerNSupervisorAPIView(APIView):
                     "old_submission_id": submission.id,
                     "old_submission_status": submission.status,
                     "new_submission_id": new_submission.id,
+                    "new_submission_attempts": new_submission.attempts,
                     "checklist_status": checklist.status
                 }, status=200)
             else:
+                print("Invalid option for supervisor:", option.choice)
                 return Response({"detail": "Invalid option value for supervisor."}, status=400)
         else:
+            print("Invalid role:", role)
             return Response({"detail": "Invalid role. Must be 'checker' or 'supervisor'."}, status=400)
 
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import permissions
-from django.db.models import Q, Exists, OuterRef
-from .models import Checklist, ChecklistItem, ChecklistItemSubmission
-from .serializers import ChecklistItemSerializer  # Assume you have this!
 
 class PendingForMakerItemsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "http://192.168.16.214:8000/api/user-access/"
+    USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
 
     def get(self, request):
         user_id = request.user.id
         project_id = request.query_params.get("project_id")
-
         if not user_id or not project_id:
             return Response({"detail": "user_id and project_id required."}, status=400)
 
-        # ---- Fetch access as in your code ----
+        # --- Fetch user access
         token = None
         auth_header = request.headers.get("Authorization")
         if auth_header:
             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-
         headers = {}
         if token:
             headers["Authorization"] = f"Bearer {token}"
-
         try:
-            import requests
             resp = requests.get(
                 self.USER_SERVICE_URL,
                 params={"user_id": user_id, "project_id": project_id},
@@ -417,43 +694,75 @@ class PendingForMakerItemsAPIView(APIView):
                 loc_q &= Q(building_id=access['building_id'])
             q |= (cat_q & loc_q)
 
-        # --- The actual filter for pending for maker ---
+        # Subquery to get latest submission id for each item
+        latest_submission_subq = ChecklistItemSubmission.objects.filter(
+            checklist_item=OuterRef('pk')
+        ).order_by('-attempts', '-created_at').values('id')[:1]
+
+
         items = ChecklistItem.objects.filter(
             checklist__project_id=project_id,
             checklist__in=Checklist.objects.filter(q),
             status="pending_for_maker"
-        ).filter(
-            Exists(
-                ChecklistItemSubmission.objects.filter(
-                    checklist_item=OuterRef('pk'),
-                    status="created",
-                    checker_id__isnull=False,
-                    maker_id__isnull=True
+        )
+
+        print(items)
+        base_items = ChecklistItem.objects.filter(
+            checklist__project_id=project_id,
+            checklist__in=Checklist.objects.filter(q),
+            status="pending_for_maker"
+        ).annotate(
+            latest_submission_id=Subquery(latest_submission_subq)
+        )
+
+        # 1. Rework items assigned to this maker
+        rework_items = base_items.filter(
+            submissions__id=F('latest_submission_id'),
+            submissions__maker_id=user_id,
+            submissions__status="created"
+        ).distinct()
+
+        # 2. Fresh items not yet picked up by any maker
+        fresh_items = base_items.filter(
+            submissions__id=F('latest_submission_id'),
+            submissions__maker_id__isnull=True,
+            submissions__status="created"
+        ).distinct()
+
+        # Combine or keep them separate as per your use-case
+        # Here, returning as two lists for clarity
+        def serialize_items_with_submission(qs):
+            out = []
+            for item in qs:
+                item_data = ChecklistItemSerializer(item).data
+                # Attach latest submission details if available
+                latest_sub = ChecklistItemSubmission.objects.filter(
+                    checklist_item=item
+                ).order_by('-attempts', '-created_at').first()
+                item_data["latest_submission"] = (
+                    ChecklistItemSubmissionSerializer(latest_sub).data
+                    if latest_sub else None
                 )
-            )
-        ).select_related('checklist').prefetch_related('submissions', 'options')
+                out.append(item_data)
+            return out
 
-        serializer = ChecklistItemSerializer(items, many=True)
-        # print(serializer.data)
-        return Response(serializer.data, status=200)
+        response = {
+            "assigned_to_me": serialize_items_with_submission(rework_items),
+            "available_for_me": serialize_items_with_submission(fresh_items),
+        }
+        print(response)
+        return Response(response, status=200)
 
 
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import permissions, status
-from django.shortcuts import get_object_or_404
-from .models import ChecklistItem, ChecklistItemSubmission
-from .serializers import ChecklistItemSerializer  # You must have a serializer for this
 
 class MAker_DOne_view(APIView):
     permission_classes = [permissions.IsAuthenticated]
-
     def post(self, request):
+        print("User ID:", request.user.id)
         checklist_item_id = request.data.get("checklist_item_id")
         print("Received checklist_item_id:", checklist_item_id)
 
-        print('status change')
         if not checklist_item_id:
             print("Validation failed: checklist_item_id missing")
             return Response({"detail": "checklist_item_id required."}, status=400)
@@ -465,64 +774,48 @@ class MAker_DOne_view(APIView):
         except ChecklistItem.DoesNotExist:
             print("ChecklistItem not found or not pending for maker.")
             return Response({"detail": "ChecklistItem not found or not pending for maker."}, status=404)
-        item.status="pending_for_supervisor"
-      
-        print('saved')
-        # 2. Try to get submission (rework, first try)
-        submission = ChecklistItemSubmission.objects.filter(
-            checklist_item=item.id,
-            status="created",
-            checker_id__isnull=False,
-            maker_id__isnull=True
-        ).order_by("-created_at").first()
 
-        if submission:
-            print(f"Found submission in first query: {submission.id}")
-        else:
-            print("First submission query returned nothing, trying second logic...")
-            # 3. If not found, try the second logic
-            submission = ChecklistItemSubmission.objects.filter(
-                checklist_item=item.id,
-                status="created",
-                maker_id=request.user.id,
-                checker_id__isnull=False,
-                supervisor_id__isnull=False
-            ).order_by("-created_at").first()
-            if submission:
-                print(f"Found submission in second query: {submission.id}")
-            else:
-                print("Second submission query also returned nothing.")
+        # 2. Find the latest "created" submission for this item assigned to this maker
+        latest_submission = (
+            ChecklistItemSubmission.objects
+            .filter(checklist_item=item, status="created")
+            .order_by('-attempts', '-created_at')
+            .first()
+        )
 
-        # 4. If any submission found, update status to pending_supervisor and save
-        if submission:
-            print(f"Updating submission {submission.id} status to 'pending_supervisor'")
-            submission.status = "pending_supervisor"
-            submission.save(update_fields=["status"])
-            item.status="pending_for_supervisor"
-            item.save()
-            item_data = ChecklistItemSerializer(item).data
-            submission_data = {
-                "id": submission.id,
-                "status": submission.status,
-                "checker_id": submission.checker_id,
-                "maker_id": submission.maker_id,
-                "supervisor_id": submission.supervisor_id,
-            }
-            print("Returning success response with item and submission data.")
-            return Response({
-                "item": item_data,
-                "submission": submission_data
-            }, status=200)
-        else:
+        if not latest_submission:
             print("No matching submission found for rework.")
             return Response({"detail": "No matching submission found for rework."}, status=404)
+        
+        if not latest_submission.maker_id:
+            latest_submission.maker_id = request.user.id
+        # 3. Update submission and item
+        latest_submission.status = "pending_supervisor"
+        latest_submission.save(update_fields=["status", "maker_id"])
+        item.status = "pending_for_supervisor"
+        item.save(update_fields=["status"])
+
+        # 4. Respond
+        item_data = ChecklistItemSerializer(item).data
+        submission_data = {
+            "id": latest_submission.id,
+            "status": latest_submission.status,
+            "checker_id": latest_submission.checker_id,
+            "maker_id": latest_submission.maker_id,
+            "supervisor_id": latest_submission.supervisor_id,
+        }
+        print("Returning success response with item and submission data.")
+        return Response({
+            "item": item_data,
+            "submission": submission_data
+        }, status=200)
 
 
 
 
-class Rework_MakerChecklistItemsAPIView(APIView):
+class PendingForSupervisorItemsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "http://192.168.16.214:8000/api/user-access/"
+    USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
 
     def get(self, request):
         user_id = request.user.id
@@ -531,6 +824,7 @@ class Rework_MakerChecklistItemsAPIView(APIView):
         if not user_id or not project_id:
             return Response({"detail": "user_id and project_id required."}, status=400)
 
+        # Fetch user access
         token = None
         auth_header = request.headers.get("Authorization")
         if auth_header:
@@ -541,7 +835,6 @@ class Rework_MakerChecklistItemsAPIView(APIView):
             headers["Authorization"] = f"Bearer {token}"
 
         try:
-            import requests
             resp = requests.get(
                 self.USER_SERVICE_URL,
                 params={"user_id": user_id, "project_id": project_id},
@@ -565,6 +858,7 @@ class Rework_MakerChecklistItemsAPIView(APIView):
                         cat_q &= Q(**{f'category_level{i}': access[key]})
                     else:
                         break
+
             loc_q = Q()
             if access.get('flat_id'):
                 loc_q &= Q(flat_id=access['flat_id'])
@@ -572,26 +866,216 @@ class Rework_MakerChecklistItemsAPIView(APIView):
                 loc_q &= Q(zone_id=access['zone_id'])
             elif access.get('building_id'):
                 loc_q &= Q(building_id=access['building_id'])
+
             q |= (cat_q & loc_q)
 
-        items = ChecklistItem.objects.filter(
+        latest_submission_subq = ChecklistItemSubmission.objects.filter(
+            checklist_item=OuterRef('pk')
+        ).order_by('-attempts', '-created_at').values('id')[:1]
+
+        base_items = ChecklistItem.objects.filter(
             checklist__project_id=project_id,
             checklist__in=Checklist.objects.filter(q),
-            status="pending_for_maker"
-        ).filter(
-            Exists(
-                ChecklistItemSubmission.objects.filter(
-                    checklist_item=OuterRef('pk'),
-                    status="created",
-                    checker_id__isnull=False,
-                    maker_id=user_id  
-                )
-            )
+            status="pending_for_supervisor"
+        ).annotate(
+            latest_submission_id=Subquery(latest_submission_subq)
+        )
+
+        assigned_to_me = base_items.filter(
+            submissions__id=F('latest_submission_id'),
+            submissions__supervisor_id=user_id,
+            submissions__status="pending_supervisor"
         ).distinct()
 
-        from .serializers import ChecklistItemSerializer
-        serializer = ChecklistItemSerializer(items, many=True)
-        return Response(serializer.data, status=200)
+        available_for_me = base_items.filter(
+            submissions__id=F('latest_submission_id'),
+            submissions__supervisor_id__isnull=True,
+            submissions__status="pending_supervisor"
+        ).distinct()
+
+        def serialize_items_with_details(qs):
+            out = []
+            for item in qs:
+                item_data = ChecklistItemSerializer(item).data
+
+                latest_sub = ChecklistItemSubmission.objects.filter(
+                    checklist_item=item
+                ).order_by('-attempts', '-created_at').first()
+
+                item_data["latest_submission"] = (
+                    ChecklistItemSubmissionSerializer(latest_sub).data
+                    if latest_sub else None
+                )
+
+                options = ChecklistItemOption.objects.filter(checklist_item=item)
+                item_data["options"] = ChecklistItemOptionSerializer(options, many=True).data
+
+                out.append(item_data)
+            return out
+
+        response = {
+            "pending_for_me": serialize_items_with_details(assigned_to_me),
+            "available_for_me": serialize_items_with_details(available_for_me),
+        }
+        print(response)
+        return Response(response, status=200)
+
+
+
+
+
+
+
+# class PendingForMakerItemsAPIView(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+#     USER_SERVICE_URL = "http://192.168.16.214:8000/api/user-access/"
+
+#     def get(self, request):
+#         user_id = request.user.id
+#         project_id = request.query_params.get("project_id")
+
+#         if not user_id or not project_id:
+#             return Response({"detail": "user_id and project_id required."}, status=400)
+
+#         # ---- Fetch access as in your code ----
+#         token = None
+#         auth_header = request.headers.get("Authorization")
+#         if auth_header:
+#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+
+#         headers = {}
+#         if token:
+#             headers["Authorization"] = f"Bearer {token}"
+
+#         try:
+#             resp = requests.get(
+#                 self.USER_SERVICE_URL,
+#                 params={"user_id": user_id, "project_id": project_id},
+#                 timeout=5,
+#                 headers=headers
+#             )
+#             if resp.status_code != 200:
+#                 return Response({"detail": "Could not fetch user access"}, status=400)
+#             accesses = resp.json()
+#         except Exception as e:
+#             return Response({"detail": "User service error", "error": str(e)}, status=400)
+
+#         q = Q()
+#         for access in accesses:
+#             cat_q = Q()
+#             if access.get('category'):
+#                 cat_q &= Q(category=access['category'])
+#                 for i in range(1, 7):
+#                     key = f'CategoryLevel{i}'
+#                     if access.get(key) is not None:
+#                         cat_q &= Q(**{f'category_level{i}': access[key]})
+#                     else:
+#                         break
+#             loc_q = Q()
+#             if access.get('flat_id'):
+#                 loc_q &= Q(flat_id=access['flat_id'])
+#             elif access.get('zone_id'):
+#                 loc_q &= Q(zone_id=access['zone_id'])
+#             elif access.get('building_id'):
+#                 loc_q &= Q(building_id=access['building_id'])
+#             q |= (cat_q & loc_q)
+
+#         items = ChecklistItem.objects.filter(
+#             checklist__project_id=project_id,
+#             checklist__in=Checklist.objects.filter(q),
+#             status="pending_for_maker"
+#         ).filter(
+#             Exists(
+#                 ChecklistItemSubmission.objects.filter(
+#                     checklist_item=OuterRef('pk'),
+#                     status="created",
+#                     checker_id__isnull=False,
+#                     maker_id__isnull=True
+#                 )
+#             )
+#         ).select_related('checklist').prefetch_related('submissions', 'options')
+
+#         serializer = ChecklistItemSerializer(items, many=True)
+#         # print(serializer.data)
+#         return Response(serializer.data, status=200)
+
+
+
+
+
+# class Rework_MakerChecklistItemsAPIView(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+#     USER_SERVICE_URL = "http://192.168.16.214:8000/api/user-access/"
+
+#     def get(self, request):
+#         user_id = request.user.id
+#         project_id = request.query_params.get("project_id")
+
+#         if not user_id or not project_id:
+#             return Response({"detail": "user_id and project_id required."}, status=400)
+
+#         token = None
+#         auth_header = request.headers.get("Authorization")
+#         if auth_header:
+#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+
+#         headers = {}
+#         if token:
+#             headers["Authorization"] = f"Bearer {token}"
+
+#         try:
+#             import requests
+#             resp = requests.get(
+#                 self.USER_SERVICE_URL,
+#                 params={"user_id": user_id, "project_id": project_id},
+#                 timeout=5,
+#                 headers=headers
+#             )
+#             if resp.status_code != 200:
+#                 return Response({"detail": "Could not fetch user access"}, status=400)
+#             accesses = resp.json()
+#         except Exception as e:
+#             return Response({"detail": "User service error", "error": str(e)}, status=400)
+
+#         q = Q()
+#         for access in accesses:
+#             cat_q = Q()
+#             if access.get('category'):
+#                 cat_q &= Q(category=access['category'])
+#                 for i in range(1, 7):
+#                     key = f'CategoryLevel{i}'
+#                     if access.get(key) is not None:
+#                         cat_q &= Q(**{f'category_level{i}': access[key]})
+#                     else:
+#                         break
+#             loc_q = Q()
+#             if access.get('flat_id'):
+#                 loc_q &= Q(flat_id=access['flat_id'])
+#             elif access.get('zone_id'):
+#                 loc_q &= Q(zone_id=access['zone_id'])
+#             elif access.get('building_id'):
+#                 loc_q &= Q(building_id=access['building_id'])
+#             q |= (cat_q & loc_q)
+
+#         items = ChecklistItem.objects.filter(
+#             checklist__project_id=project_id,
+#             checklist__in=Checklist.objects.filter(q),
+#             status="pending_for_maker"
+#         ).filter(
+#             Exists(
+#                 ChecklistItemSubmission.objects.filter(
+#                     checklist_item=OuterRef('pk'),
+#                     status="created",
+#                     checker_id__isnull=False,
+#                     maker_id=user_id  
+#                 )
+#             )
+#         ).distinct()
+
+#         from .serializers import ChecklistItemSerializer
+#         serializer = ChecklistItemSerializer(items, many=True)
+#         return Response(serializer.data, status=200)
+
 
 
 
@@ -649,34 +1133,47 @@ class ChecklistViewSet(viewsets.ModelViewSet):
     queryset = Checklist.objects.all()
     serializer_class = ChecklistSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(created_by_id=self.request.user.id)
+
     def create(self, request, *args, **kwargs):
-        # print("Creating Checklist with data:", request.data)
-        
-        # Validate required fields before serializer
-        if not request.data.get('project_id'):
-            return Response({"project_id": ["This field is required."]}, status=400)
-        if not request.data.get('purpose_id'):
-            return Response({"purpose_id": ["This field is required."]}, status=400)
-        if not request.data.get('category'):
-            return Response({"category": ["This field is required."]}, status=400)
-        if not request.data.get('name'):
-            return Response({"name": ["This field is required."]}, status=400)
-            
+        not_initialized = request.data.get('not_initialized', False)
+        print("Received not_initialized:", not_initialized, type(not_initialized))
+        print("Creating Checklist with data:", request.data)
+
+        for field in ['project_id', 'purpose_id', 'category', 'name']:
+            if not request.data.get(field):
+                return Response({field: [f"This field is required."]}, status=400)
+
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             print("Checklist Validation Errors:", serializer.errors)
             return Response(serializer.errors, status=400)
-        
-        self.perform_create(serializer)
-        # print("Checklist created successfully:", serializer.data)
-        return Response(serializer.data, status=201)
-    
+
+        instance = serializer.save(created_by_id=self.request.user.id)
+
+        if not_initialized in [True, "true", "True", 1, "1"]:
+            instance.status = "in_progress"
+            instance.save(update_fields=["status"])
+            print("Checklist status updated to in_progress")
+
+        out_serializer = self.get_serializer(instance)
+        print("Checklist created successfully:", out_serializer.data)
+        return Response(out_serializer.data, status=201)
+
     def get_queryset(self):
         queryset = super().get_queryset()
         project_id = self.request.query_params.get("project")
         if project_id:
             queryset = queryset.filter(project_id=project_id)
         return queryset
+
+    @action(detail=False, methods=["get"], url_path="my-checklists")
+    def my_checklists(self, request):
+        user_id = request.user.id
+        checklists = self.get_queryset().filter(created_by_id=user_id)
+        serializer = self.get_serializer(checklists, many=True)
+        return Response(serializer.data)
 
 
 class ChecklistItemViewSet(viewsets.ModelViewSet):
@@ -686,21 +1183,35 @@ class ChecklistItemViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         print("Creating ChecklistItem with data:", request.data)
-        
-        # Validate required fields
+
         if not request.data.get('checklist'):
             return Response({"checklist": ["This field is required."]}, status=400)
 
-            
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             print("ChecklistItem Validation Errors:", serializer.errors)
             return Response(serializer.errors, status=400)
-        
-        self.perform_create(serializer)
-        print("ChecklistItem created successfully:", serializer.data)
-        return Response(serializer.data, status=201)
-    
+
+        # Get the parent checklist instance
+        checklist_id = request.data.get('checklist')
+        from .models import Checklist  # or import at top
+        try:
+            checklist = Checklist.objects.get(id=checklist_id)
+        except Checklist.DoesNotExist:
+            return Response({"checklist": ["Invalid checklist ID."]}, status=400)
+
+        # Save the item first (so you get an instance)
+        item = serializer.save()
+
+        # Set status if parent checklist is in_progress
+        if checklist.status == "in_progress":
+            item.status = "pending_for_inspector"
+            item.save(update_fields=["status"])
+
+        out_serializer = self.get_serializer(item)
+        print("ChecklistItem created successfully:", out_serializer.data)
+        return Response(out_serializer.data, status=201)
+
     @action(detail=False, methods=['get'])
     def by_checklist(self, request):
         checklist_id = request.query_params.get('checklist_id')
@@ -709,6 +1220,20 @@ class ChecklistItemViewSet(viewsets.ModelViewSet):
         items = self.get_queryset().filter(checklist_id=checklist_id)
         serializer = self.get_serializer(items, many=True)
         return Response(serializer.data)
+    
+    def partial_update(self, request, *args, **kwargs):
+        print("PATCH data:", request.data)
+        instance = self.get_object()
+        print("PATCH for ChecklistItem ID:", instance.id, "Current status:", instance.status)
+
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        if not serializer.is_valid():
+            print("PATCH Validation Errors:", serializer.errors)
+            return Response(serializer.errors, status=400)
+
+        updated_item = serializer.save()
+        print("PATCH successful for ChecklistItem ID:", updated_item.id, "Updated status:", updated_item.status)
+        return Response(self.get_serializer(updated_item).data)
 
 
 class ChecklistItemSubmissionViewSet(viewsets.ModelViewSet):

@@ -16,11 +16,11 @@ class Checklist(models.Model):
     building_id = models.IntegerField(null=True, blank=True)
     zone_id = models.IntegerField(null=True, blank=True)
     flat_id = models.IntegerField(null=True, blank=True)
-    purpose_id = models.IntegerField()  # Required field
+    purpose_id = models.IntegerField() 
     phase_id = models.IntegerField(null=True, blank=True)
     stage_id = models.IntegerField(null=True, blank=True)
 
-    category = models.IntegerField()  # Required field
+    category = models.IntegerField()  
     category_level1 = models.IntegerField(null=True, blank=True)
     category_level2 = models.IntegerField(null=True, blank=True)
     category_level3 = models.IntegerField(null=True, blank=True)
@@ -30,7 +30,7 @@ class Checklist(models.Model):
 
     remarks = models.TextField(blank=True)
 
-    created_by_id = models.IntegerField(null=True, blank=True)  # Replaced ForeignKey with integer field
+    created_by_id = models.IntegerField(null=True, blank=True) 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -45,12 +45,12 @@ class ChecklistItem(models.Model):
     description = models.TextField(blank=True, null=True)
     STATUS_CHOICES = [
         ("not_started", "Not Started"),
-        ("in_progress", "In Progress"),
+        # ("in_progress", "In Progress"),
+        ("pending_for_inspector", "Pending for Inspector"),
 
         ("pending_for_maker", "Pending for Maker"),
         ("pending_for_supervisor", "Pending for Supervisor"),
 
-        ("pending_for_inspector", "Pending for Inspector"),
         ("completed", "Completed"),
     ]
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="not_started")
@@ -77,28 +77,33 @@ class ChecklistItemSubmission(models.Model):
         ("created", "Created"),
         ("completed", "Completed"),
         
+        ("Pending for Maker", "Pending for Maker"),
         ("pending_supervisor", "Pending Supervisor"),
         ("pending_checker", "Pending Checker"),
 
         ("rejected_by_supervisor", "Rejected by Supervisor"),
         ("rejected_by_checker", "Rejected by Checker"),
     ]
-
+    attempts=models.IntegerField(default=0)
     checklist_item = models.ForeignKey(ChecklistItem, on_delete=models.CASCADE, related_name="submissions")
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="created")
 
     maker_id = models.IntegerField(null=True, blank=True)
+    maker_remarks = models.TextField(blank=True, null=True)
+    maker_media = models.ImageField(upload_to='maker_media/', null=True, blank=True)
     maker_at = models.DateTimeField(null=True, blank=True)
 
     supervisor_id = models.IntegerField(null=True, blank=True)
+    supervisor_remarks = models.TextField(blank=True, null=True)
     reviewer_photo = models.ImageField(upload_to='reviewer_photos/', null=True, blank=True)
     supervised_at = models.DateTimeField(null=True, blank=True)
 
     inspector_photo = models.ImageField(upload_to='inspector_photos/', null=True, blank=True)
     checker_id = models.IntegerField(null=True, blank=True)
     checked_at = models.DateTimeField(null=True, blank=True)
+    checker_remarks = models.TextField(blank=True, null=True)
 
-    remarks = models.TextField(blank=True, null=True)
+    remarks=models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

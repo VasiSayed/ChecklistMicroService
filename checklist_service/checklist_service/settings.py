@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEBUG = True
 
-ALLOWED_HOSTS = ["*","192.168.1.28", "localhost", "127.0.0.1","192.168.23.214",'192.168.16.214','192.168.16.214',"192.168.1.12","192.168.1.28",'192.168.1.11']
+ALLOWED_HOSTS = ["*","192.168.1.28", "localhost", "127.0.0.1","192.168.23.214",'192.168.16.214','192.168.16.214',"192.168.1.12","192.168.1.28",'192.168.1.11','192.168.78.214','192.168.78.48']
 
 
 
@@ -71,6 +71,8 @@ CORS_ALLOW_ALL_ORIGINS = True  # For development only!
 
 
 CORS_ALLOWED_ORIGINS = [
+        "http://192.168.78.146:3000",
+
     # "http://localhost:3000",    
     # "http://192.168.1.31:3000",  # Prathamesh
     # "http://192.168.1.5:3000",   # Atharva
@@ -81,6 +83,13 @@ CORS_ALLOWED_ORIGINS = [
     # "http://192.168.1.23.214:8002",  # Microservice 2 on your machine
     # "http://192.168.1.23.214:8000",  # Microservice 3 on your machine
 
+
+    "http:// 192.168.78.214:3000",
+    "http:// 192.168.78.214:3000",
+    
+    "http:// 192.168.78.214:8001",
+    "http:// 192.168.78.214:8002",
+    "http:// 192.168.78.214:8000",
 
     "http://192.168.1.31:3000",  # Prathamesh
     "http://192.168.1.11:3000",   # Atharva
@@ -102,7 +111,11 @@ CORS_ALLOWED_ORIGINS = [
 
     "http://192.168.1.28:8001",  # Microservice 1 on your machine
     "http://192.168.1.28:8002",  # Microservice 2 on your machine
-    "http://192.168.1.28:8005",  # Microservice 3 on your machine
+    "http://192.168.1.28:8005",
+    "http://192.168.1.28:8003",
+    "http://192.168.1.28:8000",  # Microservice 3 on your machine
+  # Microservice 3 on your machine
+  # Microservice 3 on your machine
 
    
 ]

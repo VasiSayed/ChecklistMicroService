@@ -1,5 +1,3 @@
-# Fixed serializers.py
-
 from rest_framework import serializers
 from .models import Checklist, ChecklistItem, ChecklistItemSubmission, ChecklistItemOption
 from django.db.models import Q
@@ -12,7 +10,7 @@ class ChecklistItemOptionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# ChecklistItemSubmission
+
 class ChecklistItemSubmissionPendingSerializer(serializers.ModelSerializer):
     checklist_item_options = serializers.SerializerMethodField()
     maker_name = serializers.SerializerMethodField()
@@ -30,11 +28,9 @@ class ChecklistItemSubmissionPendingSerializer(serializers.ModelSerializer):
         return ChecklistItemOptionSerializer(options, many=True).data
 
     def get_maker_name(self, obj):
-        # Replace with user fetching if you have user model connected
         return f"User {obj.user}" if obj.user else "Unknown User"
 
 
-# ChecklistItem
 class ChecklistItemWithPendingSubmissionsSerializer(serializers.ModelSerializer):
     submissions = serializers.SerializerMethodField()
 
@@ -52,7 +48,6 @@ class ChecklistItemWithPendingSubmissionsSerializer(serializers.ModelSerializer)
         ).order_by('-accepted_at')
         return ChecklistItemSubmissionPendingSerializer(subs, many=True).data
 
-# Checklist
 class ChecklistWithItemsAndPendingSubmissionsSerializer(serializers.ModelSerializer):
     items = serializers.SerializerMethodField()
 
@@ -69,15 +64,7 @@ class ChecklistWithItemsAndPendingSubmissionsSerializer(serializers.ModelSeriali
         return ChecklistItemWithPendingSubmissionsSerializer(items, many=True).data
 
 
-# serializers.py
 
-from rest_framework import serializers
-# from .models import ChecklistAccess
-
-# class ChecklistAccessSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = ChecklistAccess
-#         fields = '__all__'
 
 
 
@@ -228,6 +215,26 @@ class ChecklistItemWithFilteredSubmissionsSerializer(serializers.ModelSerializer
             models.Q(check_remark__isnull=True) | models.Q(check_remark__exact="")
         )
         return ChecklistItemSubmissionFilteredSerializer(subs, many=True).data
+
+
+class ChecklistItemSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChecklistItemSubmission
+        fields = '__all__'
+
+class ChecklistItemWithSubmissionsSerializer(serializers.ModelSerializer):
+    options = ChecklistItemOptionSerializer(many=True, read_only=True)
+    submissions = ChecklistItemSubmissionSerializer(many=True, read_only=True)
+    class Meta:
+        model = ChecklistItem
+        fields = ['id', 'title', 'description', 'status', 'ignore_now', 'photo_required', 'options', 'submissions']
+
+
+class ChecklistWithItemsAndSubmissionsSerializer(serializers.ModelSerializer):
+    items = ChecklistItemWithSubmissionsSerializer(many=True, read_only=True)
+    class Meta:
+        model = Checklist
+        fields = ['id', 'name', 'description', 'status', 'project_id', 'items']
 
 
 class ChecklistWithItemsAndFilteredSubmissionsSerializer(serializers.ModelSerializer):

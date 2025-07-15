@@ -34,16 +34,30 @@ urlpatterns = [
     
 
 
+#for daaaashboard
+    path('checklist-analytics/', views.ChecklistRoleAnalyticsAPIView.as_view(), name='checklist-analytics'),
+
+# for all
+    path('checklist-items/<int:checklist_id>/', views.ChecklistItemsByChecklistAPIView.as_view(), name='checklist-items-by-checklist'),
+    path('checklists/filter/', views.ChecklistByCreatorAndProjectAPIView.as_view(), name='checklist-filter'),
+
 # for intializer
     path('initializer-accessible-checklists/', views.CHecklist_View_FOr_INtializer.as_view(),      name='initializer-accessible-checklists'),
     path('start-checklist/<int:checklist_id>/', views.IntializeChechklistView.as_view(), name='start-checklist'),
 
 # Inspector CHehcklist
     path('Chechker-New-checklist/', views.CheckerInprogressAccessibleChecklists.as_view(), name='CHecker-View-checklist'),
+
+    # supervisor
     path('Decsion-makeing-forSuer-Inspector/',views.VerifyChecklistItemForCheckerNSupervisorAPIView.as_view(),name='Decision_api'),
 
 
+# for maker
     path('pending-for-maker/', views.PendingForMakerItemsAPIView.as_view(), name='pending-for-maker-items'),
     path('mark-as-done-maker/',views.MAker_DOne_view.as_view(), name="MArker_save"),
+
+
+# for supervisor
+        path('Supervisor-Pending-work/',views.PendingForSupervisorItemsAPIView.as_view(),name="pending-supervsiorr-view"),
 
 ]
