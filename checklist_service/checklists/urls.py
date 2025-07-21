@@ -60,4 +60,6 @@ urlpatterns = [
 # for supervisor
         path('Supervisor-Pending-work/',views.PendingForSupervisorItemsAPIView.as_view(),name="pending-supervsiorr-view"),
 
+#for checklist for all units
+path('create/unit-chechklist/', views.CreateChecklistforUnit.as_view(), name='create-checklist-for-unit'),
 ]

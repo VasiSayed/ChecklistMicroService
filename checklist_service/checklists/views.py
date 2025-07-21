@@ -13,6 +13,126 @@ from django.db.models import Case, When, IntegerField
 from .serializers import ChecklistWithItemsAndSubmissionsSerializer
 from django.db import models
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.db import transaction
+import requests
+
+
+
+class CreateChecklistforUnit(APIView):
+    UNIT_SERVICE_URL = 'https://konstruct.world/projects/units-by-id/'
+
+    def post(self, request):
+        data = request.data
+
+        # Validation: Required fields
+        required_fields = ['name', 'project_id', 'created_by_id']
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        if missing_fields:
+            print(f"Missing required fields: {missing_fields}")
+            return Response(
+                {"error": f"Missing required fields: {', '.join(missing_fields)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print("All required fields present.")
+
+        # Extract checklist fields
+        checklist_fields = {
+            'name': data.get('name'),
+            'description': data.get('description'),
+            'status': data.get('status', 'not_started'),
+            'project_id': data.get('project_id'),
+            'building_id': data.get('building_id'),
+            'zone_id': data.get('zone_id'),
+            'flat_id': data.get('flat_id'),
+            'purpose_id': data.get('purpose_id'),
+            'phase_id': data.get('phase_id'),
+            'stage_id': data.get('stage_id'),
+            'category': data.get('category'),
+            'category_level1': data.get('category_level1'),
+            'category_level2': data.get('category_level2'),
+            'category_level3': data.get('category_level3'),
+            'category_level4': data.get('category_level4'),
+            'category_level5': data.get('category_level5'),
+            'category_level6': data.get('category_level6'),
+            'remarks': data.get('remarks'),
+            'created_by_id': data.get('created_by_id'),
+        }
+        units_payload = {}
+        if checklist_fields['flat_id']:
+            units_payload['flat_id'] = checklist_fields['flat_id']
+        elif checklist_fields['zone_id']:
+            units_payload['zone_id'] = checklist_fields['zone_id']
+        elif checklist_fields['building_id']:
+            units_payload['building_id'] = checklist_fields['building_id']
+        elif checklist_fields['project_id']:
+            units_payload['project_id'] = checklist_fields['project_id']
+        else:
+            print("Insufficient identifiers provided.")
+            return Response({"error": "Insufficient identifiers provided."}, status=400)
+
+        print(f"Fetching units with payload: {units_payload}")
+        try:
+            units_response = requests.get(self.UNIT_SERVICE_URL, params=units_payload)
+            units_response.raise_for_status()
+            units_data = units_response.json()
+            unit_ids = units_data.get('unit_ids', [])
+            print(f"Unit IDs fetched: {unit_ids}")
+            if not unit_ids:
+                return Response({"error": "No units found for the provided identifiers."}, status=404)
+        except requests.RequestException as e:
+            print(f"Request failed: {e}")
+            return Response({"error": f"Failed to fetch units: {str(e)}"}, status=500)
+
+        created_checklists = []
+
+        # Iterate over unit IDs and create checklists
+        for unit_id in unit_ids:
+            try:
+                with transaction.atomic():
+                    print(f"Creating checklist for unit_id: {unit_id}")
+                    checklist_fields.pop('flat_id', None)
+                    checklist_instance = Checklist.objects.create(
+                        **checklist_fields,
+                        flat_id=unit_id
+                    )
+
+                    items = data.get('items', [])
+                    print(f"Checklist has {len(items)} items.")
+
+                    for item in items:
+                        checklist_item = ChecklistItem.objects.create(
+                            checklist=checklist_instance,
+                            title=item.get('title'),
+                            description=item.get('description'),
+                            status=item.get('status', 'not_started'),
+                            ignore_now=item.get('ignore_now', False),
+                            photo_required=item.get('photo_required', False)
+                        )
+
+                        options = item.get('options', [])
+                        print(f"Item '{item.get('title')}' has {len(options)} options.")
+
+                        for option in options:
+                            ChecklistItemOption.objects.create(
+                                checklist_item=checklist_item,
+                                name=option.get('name'),
+                                choice=option.get('choice', 'P')
+                            )
+
+                    created_checklists.append(checklist_instance.id)
+            except Exception as e:
+                print(f"Error creating checklist for unit_id {unit_id}: {e}")
+                return Response({"error": f"Failed to create checklist for unit {unit_id}: {str(e)}"}, status=500)
+
+        print("All checklists created successfully.")
+        return Response(
+            {"message": "Checklists created successfully.", "checklist_ids": created_checklists},
+            status=201
+        )
 
 
 
@@ -47,7 +167,7 @@ def get_intializer_analytics(user_id, project_id, request):
     # Use same logic as your CHecklist_View_FOr_INtializer, but just count the checklists
 
     # Fetch user accesses from USER_SERVICE (external call)
-    USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
+    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
     token = None
     auth_header = request.headers.get("Authorization")
     if auth_header:
@@ -223,7 +343,7 @@ class ChecklistByCreatorAndProjectAPIView(APIView):
 
 class CHecklist_View_FOr_INtializer(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
+    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
 
     def get(self, request):
         user_id = request.user.id
@@ -326,7 +446,7 @@ class IntializeChechklistView(APIView):
 
 class CheckerInprogressAccessibleChecklists(APIView):
     permission_classes = [IsAuthenticated]
-    USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
+    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
 
     def get(self, request):
         user_id = request.user.id
@@ -645,7 +765,7 @@ class VerifyChecklistItemForCheckerNSupervisorAPIView(APIView):
 
 class PendingForMakerItemsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
+    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
 
     def get(self, request):
         user_id = request.user.id
@@ -815,7 +935,7 @@ class MAker_DOne_view(APIView):
 
 class PendingForSupervisorItemsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
+    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
 
     def get(self, request):
         user_id = request.user.id
@@ -1317,7 +1437,7 @@ class ChecklistItemByCategoryStatusView(APIView):
 
 class AccessibleChecklistsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "http://192.168.23.214:8000/api/user-access/"
+    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
 
     def get(self, request):
         user_id = request.user.id
@@ -1493,7 +1613,7 @@ import requests
 
 class AccessibleChecklistsWithPendingCheckerSubmissionsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "http://192.168.23.214:8000/api/user-access/"
+    USER_SERVICE_URL ="https://konstruct.world/users/user-access/"
 
     def get(self, request):
         user_id = request.user.id
