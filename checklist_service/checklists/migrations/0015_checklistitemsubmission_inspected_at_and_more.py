@@ -13,26 +13,53 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='inspected_at',
-            field=models.DateTimeField(blank=True, null=True),
+            field=models.DateTimeField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='inspected_by_id',
-            field=models.IntegerField(blank=True, null=True),
+            field=models.IntegerField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='review_photo',
-            field=models.ImageField(blank=True, null=True, upload_to='review_photos/'),
+            field=models.ImageField(
+                blank=True,
+                null=True,
+                upload_to='review_photos/'),
         ),
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='review_remark',
-            field=models.TextField(blank=True),
+            field=models.TextField(
+                blank=True),
         ),
         migrations.AlterField(
             model_name='checklistitem',
             name='status',
-            field=models.CharField(choices=[('NOT_STARTED', 'Not Started'), ('IN_PROGRESS', 'In Progress'), ('DONE', 'Done by Maker'), ('VERIFIED', 'Verified by Checker'), ('REVIEWING', 'Under Review'), ('REVIEW_REJECTED', 'Rejected by Reviewer'), ('COMPLETED', 'Completed'), ('REOPENED', 'Reopened')], default='NOT_STARTED', max_length=20),
+            field=models.CharField(
+                choices=[
+                    ('NOT_STARTED',
+                     'Not Started'),
+                    ('IN_PROGRESS',
+                     'In Progress'),
+                    ('DONE',
+                     'Done by Maker'),
+                    ('VERIFIED',
+                     'Verified by Checker'),
+                    ('REVIEWING',
+                     'Under Review'),
+                    ('REVIEW_REJECTED',
+                     'Rejected by Reviewer'),
+                    ('COMPLETED',
+                     'Completed'),
+                    ('REOPENED',
+                     'Reopened')],
+                default='NOT_STARTED',
+                max_length=20),
         ),
     ]

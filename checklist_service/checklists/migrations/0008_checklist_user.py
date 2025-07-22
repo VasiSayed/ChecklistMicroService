@@ -6,7 +6,8 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checklists', '0007_remove_checklist_subcategory_checklistitemoption_and_more'),
+        ('checklists',
+         '0007_remove_checklist_subcategory_checklistitemoption_and_more'),
     ]
 
     operations = [

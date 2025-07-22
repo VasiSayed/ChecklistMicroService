@@ -7,36 +7,63 @@ from django.contrib import admin
 from .models import Checklist, ChecklistItem, ChecklistItemOption, ChecklistItemSubmission
 
 # Inline for Checklist Items
+
+
 class ChecklistItemInline(admin.TabularInline):
     model = ChecklistItem
     extra = 0
     show_change_link = True
 
 # Inline for ChecklistItemOptions
+
+
 class ChecklistItemOptionInline(admin.TabularInline):
     model = ChecklistItemOption
     extra = 0
 
 # Inline for Submissions
+
+
 class ChecklistItemSubmissionInline(admin.TabularInline):
     model = ChecklistItemSubmission
     extra = 0
 
+
 @admin.register(Checklist)
 class ChecklistAdmin(admin.ModelAdmin):
     list_display = [
-        'id', 'name', 'project_id', 'status', 'created_by_id', 'created_at', 'updated_at'
-    ]
+        'id',
+        'name',
+        'project_id',
+        'status',
+        'created_by_id',
+        'created_at',
+        'updated_at']
     search_fields = [
-        'id', 'name', 'description', 'project_id', 'building_id', 'flat_id', 'zone_id'
-    ]
+        'id',
+        'name',
+        'description',
+        'project_id',
+        'building_id',
+        'flat_id',
+        'zone_id']
     list_filter = [
-        'status', 'project_id', 'purpose_id', 'building_id', 'zone_id', 'flat_id',
-        'category', 'category_level1', 'category_level2', 'category_level3', 'category_level4',
-        'category_level5', 'category_level6'
-    ]
+        'status',
+        'project_id',
+        'purpose_id',
+        'building_id',
+        'zone_id',
+        'flat_id',
+        'category',
+        'category_level1',
+        'category_level2',
+        'category_level3',
+        'category_level4',
+        'category_level5',
+        'category_level6']
     inlines = [ChecklistItemInline]
     ordering = ['-created_at']
+
 
 @admin.register(ChecklistItem)
 class ChecklistItemAdmin(admin.ModelAdmin):
@@ -47,10 +74,13 @@ class ChecklistItemAdmin(admin.ModelAdmin):
         'id', 'title', 'description', 'checklist__name'
     ]
     list_filter = [
-        'status', 'checklist__project_id', 'checklist__status', 'photo_required'
-    ]
+        'status',
+        'checklist__project_id',
+        'checklist__status',
+        'photo_required']
     inlines = [ChecklistItemOptionInline, ChecklistItemSubmissionInline]
     ordering = ['checklist', 'id']
+
 
 @admin.register(ChecklistItemOption)
 class ChecklistItemOptionAdmin(admin.ModelAdmin):
@@ -64,14 +94,24 @@ class ChecklistItemOptionAdmin(admin.ModelAdmin):
         'choice', 'checklist_item'
     ]
 
+
 @admin.register(ChecklistItemSubmission)
 class ChecklistItemSubmissionAdmin(admin.ModelAdmin):
     list_display = [
-        'id', 'checklist_item', 'status', 'maker_id', 'supervisor_id', 'checker_id', 'created_at' ,'attempts'
-    ]
+        'id',
+        'checklist_item',
+        'status',
+        'maker_id',
+        'supervisor_id',
+        'checker_id',
+        'created_at',
+        'attempts']
     search_fields = [
-        'id', 'checklist_item__title', 'maker_id', 'supervisor_id', 'checker_id'
-    ]
+        'id',
+        'checklist_item__title',
+        'maker_id',
+        'supervisor_id',
+        'checker_id']
     list_filter = [
         'status', 'maker_id', 'supervisor_id', 'checker_id'
     ]

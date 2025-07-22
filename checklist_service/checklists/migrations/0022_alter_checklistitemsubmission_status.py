@@ -13,6 +13,17 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='checklistitemsubmission',
             name='status',
-            field=models.CharField(choices=[('IN_PROGRESS', 'In Progress'), ('SUBMITTED', 'Submitted'), ('APPROVED', 'Approved'), ('REJECTED', 'Rejected')], default='IN_PROGRESS', max_length=25),
+            field=models.CharField(
+                choices=[
+                    ('IN_PROGRESS',
+                     'In Progress'),
+                    ('SUBMITTED',
+                     'Submitted'),
+                    ('APPROVED',
+                     'Approved'),
+                    ('REJECTED',
+                     'Rejected')],
+                default='IN_PROGRESS',
+                max_length=25),
         ),
     ]

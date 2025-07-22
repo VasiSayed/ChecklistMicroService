@@ -13,11 +13,41 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='checklistitem',
             name='status',
-            field=models.CharField(choices=[('not_started', 'Not Started'), ('pending_for_inspector', 'Pending for Inspector'), ('pending_for_maker', 'Pending for Maker'), ('pending_for_supervisor', 'Pending for Supervisor'), ('completed', 'Completed')], default='not_started', max_length=30),
+            field=models.CharField(
+                choices=[
+                    ('not_started',
+                     'Not Started'),
+                    ('pending_for_inspector',
+                     'Pending for Inspector'),
+                    ('pending_for_maker',
+                     'Pending for Maker'),
+                    ('pending_for_supervisor',
+                     'Pending for Supervisor'),
+                    ('completed',
+                     'Completed')],
+                default='not_started',
+                max_length=30),
         ),
         migrations.AlterField(
             model_name='checklistitemsubmission',
             name='status',
-            field=models.CharField(choices=[('created', 'Created'), ('completed', 'Completed'), ('Pending for Maker', 'Pending for Maker'), ('pending_supervisor', 'Pending Supervisor'), ('pending_checker', 'Pending Checker'), ('rejected_by_supervisor', 'Rejected by Supervisor'), ('rejected_by_checker', 'Rejected by Checker')], default='created', max_length=30),
+            field=models.CharField(
+                choices=[
+                    ('created',
+                     'Created'),
+                    ('completed',
+                     'Completed'),
+                    ('Pending for Maker',
+                     'Pending for Maker'),
+                    ('pending_supervisor',
+                     'Pending Supervisor'),
+                    ('pending_checker',
+                     'Pending Checker'),
+                    ('rejected_by_supervisor',
+                     'Rejected by Supervisor'),
+                    ('rejected_by_checker',
+                     'Rejected by Checker')],
+                default='created',
+                max_length=30),
         ),
     ]

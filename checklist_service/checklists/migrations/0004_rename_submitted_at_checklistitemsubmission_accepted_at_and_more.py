@@ -6,8 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checklists', '0003_remove_checklistitemsubmission_checklist_and_more'),
-    ]
+        ('checklists', '0003_remove_checklistitemsubmission_checklist_and_more'), ]
 
     operations = [
         migrations.RenameField(

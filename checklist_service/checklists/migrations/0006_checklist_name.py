@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checklists', '0005_checklist_category_level1_checklist_category_level2_and_more'),
+        ('checklists',
+         '0005_checklist_category_level1_checklist_category_level2_and_more'),
     ]
 
     operations = [
         migrations.AddField(
             model_name='checklist',
             name='name',
-            field=models.CharField(blank=True, default='checklist', max_length=100),
+            field=models.CharField(
+                blank=True,
+                default='checklist',
+                max_length=100),
         ),
     ]

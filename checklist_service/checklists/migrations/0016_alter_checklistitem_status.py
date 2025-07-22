@@ -13,6 +13,23 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='checklistitem',
             name='status',
-            field=models.CharField(choices=[('NOT_STARTED', 'Not Started'), ('IN_PROGRESS', 'In Progress'), ('DONE', 'Done by Maker'), ('VERIFIED', 'Verified by Checker'), ('REVIEW_REJECTED', 'Rejected by Reviewer'), ('COMPLETED', 'Completed'), ('REOPENED', 'Reopened')], default='NOT_STARTED', max_length=20),
+            field=models.CharField(
+                choices=[
+                    ('NOT_STARTED',
+                     'Not Started'),
+                    ('IN_PROGRESS',
+                     'In Progress'),
+                    ('DONE',
+                     'Done by Maker'),
+                    ('VERIFIED',
+                     'Verified by Checker'),
+                    ('REVIEW_REJECTED',
+                     'Rejected by Reviewer'),
+                    ('COMPLETED',
+                     'Completed'),
+                    ('REOPENED',
+                     'Reopened')],
+                default='NOT_STARTED',
+                max_length=20),
         ),
     ]

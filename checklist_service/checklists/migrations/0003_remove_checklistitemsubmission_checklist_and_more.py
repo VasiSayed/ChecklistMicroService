@@ -6,8 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checklists', '0002_rename_work_type_id_checklist_subcategory_and_more'),
-    ]
+        ('checklists', '0002_rename_work_type_id_checklist_subcategory_and_more'), ]
 
     operations = [
         migrations.RemoveField(
@@ -17,6 +16,15 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='status',
-            field=models.CharField(choices=[('NOT_STARTED', 'Not Started'), ('IN_PROGRESS', 'In Progress'), ('COMPLETED', 'Completed')], default='IN_PROGRESS', max_length=25),
+            field=models.CharField(
+                choices=[
+                    ('NOT_STARTED',
+                     'Not Started'),
+                    ('IN_PROGRESS',
+                     'In Progress'),
+                    ('COMPLETED',
+                     'Completed')],
+                default='IN_PROGRESS',
+                max_length=25),
         ),
     ]

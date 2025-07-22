@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import environ
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -21,8 +23,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['192.168.29.168', " 192.168.29.239","101.53.133.132","*","192.168.1.28", "localhost", "127.0.0.1","192.168.23.214",'192.168.16.214','192.168.16.214',"192.168.1.12","192.168.1.28",'192.168.1.11','192.168.78.214','192.168.78.48']
-
+ALLOWED_HOSTS = [
+    '192.168.29.168',
+    " 192.168.29.239",
+    "101.53.133.132",
+    "*",
+    "192.168.1.28",
+    "localhost",
+    "127.0.0.1",
+    "192.168.23.214",
+    '192.168.16.214',
+    '192.168.16.214',
+    "192.168.1.12",
+    "192.168.1.28",
+    '192.168.1.11',
+    '192.168.78.214',
+    '192.168.78.48']
 
 
 INSTALLED_APPS = [
@@ -33,13 +49,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'checklists', 
+    'checklists',
     'corsheaders',
 
 ]
 
-import os
-import environ
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 env = environ.Env()
@@ -51,9 +65,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),  
+    os.path.join(BASE_DIR, 'static'),
 ]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') 
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -71,9 +85,9 @@ CORS_ALLOW_ALL_ORIGINS = True  # For development only!
 
 
 CORS_ALLOWED_ORIGINS = [
-        "http://192.168.78.146:3000",
+    "http://192.168.78.146:3000",
 
-    # "http://localhost:3000",    
+    # "http://localhost:3000",
     # "http://192.168.1.31:3000",  # Prathamesh
     # "http://192.168.1.5:3000",   # Atharva
     # "http://192.168.1.12:3000",   # vasi
@@ -86,7 +100,7 @@ CORS_ALLOWED_ORIGINS = [
 
     "http:// 192.168.78.214:3000",
     "http:// 192.168.78.214:3000",
-    
+
     "http:// 192.168.78.214:8001",
     "http:// 192.168.78.214:8002",
     "http:// 192.168.78.214:8000",
@@ -114,14 +128,14 @@ CORS_ALLOWED_ORIGINS = [
     "http://101.53.133.132:3000",
     "http://101.53.133.132:8003",
     "http://101.53.133.132:8000",  # Microservice 3 on your machine
-  # Microservice 3 on your machine
-  # Microservice 3 on your machine
+    # Microservice 3 on your machine
+    # Microservice 3 on your machine
     "https://konstruct.world",
-'http://127.0.0.1:8001',
+    'http://127.0.0.1:8001',
     'http://127.0.0.1:8002',
     'http://127.0.0.1:8003',
     'http://127.0.0.1:8000',
-   
+
 ]
 
 

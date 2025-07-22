@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class Checklist(models.Model):
     STATUS_CHOICES = [
         ("not_started", "Not Started"),
@@ -10,17 +11,21 @@ class Checklist(models.Model):
 
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="not_started")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="not_started")
 
     project_id = models.IntegerField()
     building_id = models.IntegerField(null=True, blank=True)
     zone_id = models.IntegerField(null=True, blank=True)
+    room_id = models.IntegerField(null=True, blank=True)
     flat_id = models.IntegerField(null=True, blank=True)
-    purpose_id = models.IntegerField() 
+    purpose_id = models.IntegerField()
     phase_id = models.IntegerField(null=True, blank=True)
     stage_id = models.IntegerField(null=True, blank=True)
 
-    category = models.IntegerField()  
+    category = models.IntegerField()
     category_level1 = models.IntegerField(null=True, blank=True)
     category_level2 = models.IntegerField(null=True, blank=True)
     category_level3 = models.IntegerField(null=True, blank=True)
@@ -30,7 +35,7 @@ class Checklist(models.Model):
 
     remarks = models.TextField(blank=True)
 
-    created_by_id = models.IntegerField(null=True, blank=True) 
+    created_by_id = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -38,9 +43,11 @@ class Checklist(models.Model):
         return self.name
 
 
-
 class ChecklistItem(models.Model):
-    checklist = models.ForeignKey(Checklist, on_delete=models.CASCADE, related_name="items")
+    checklist = models.ForeignKey(
+        Checklist,
+        on_delete=models.CASCADE,
+        related_name="items")
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     STATUS_CHOICES = [
@@ -53,7 +60,10 @@ class ChecklistItem(models.Model):
 
         ("completed", "Completed"),
     ]
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="not_started")
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default="not_started")
     ignore_now = models.BooleanField(default=False)
     photo_required = models.BooleanField(default=False)
 
@@ -61,22 +71,25 @@ class ChecklistItem(models.Model):
         return f"{self.title} ({self.checklist.name})"
 
 
-
 class ChecklistItemOption(models.Model):
-    checklist_item = models.ForeignKey(ChecklistItem, on_delete=models.CASCADE, related_name="options")
+    checklist_item = models.ForeignKey(
+        ChecklistItem,
+        on_delete=models.CASCADE,
+        related_name="options")
     name = models.CharField(max_length=255)
-    choice = models.CharField(max_length=20, choices=[("P", "Positive"), ("N", "Negative")])
+    choice = models.CharField(
+        max_length=20, choices=[
+            ("P", "Positive"), ("N", "Negative")])
 
     def __str__(self):
         return f"{self.name} ({self.choice})"
-
 
 
 class ChecklistItemSubmission(models.Model):
     STATUS_CHOICES = [
         ("created", "Created"),
         ("completed", "Completed"),
-        
+
         ("Pending for Maker", "Pending for Maker"),
         ("pending_supervisor", "Pending Supervisor"),
         ("pending_checker", "Pending Checker"),
@@ -84,34 +97,39 @@ class ChecklistItemSubmission(models.Model):
         ("rejected_by_supervisor", "Rejected by Supervisor"),
         ("rejected_by_checker", "Rejected by Checker"),
     ]
-    attempts=models.IntegerField(default=0)
-    checklist_item = models.ForeignKey(ChecklistItem, on_delete=models.CASCADE, related_name="submissions")
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="created")
+    attempts = models.IntegerField(default=0)
+    checklist_item = models.ForeignKey(
+        ChecklistItem,
+        on_delete=models.CASCADE,
+        related_name="submissions")
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default="created")
 
     maker_id = models.IntegerField(null=True, blank=True)
     maker_remarks = models.TextField(blank=True, null=True)
-    maker_media = models.ImageField(upload_to='maker_media/', null=True, blank=True)
+    maker_media = models.ImageField(
+        upload_to='maker_media/', null=True, blank=True)
     maker_at = models.DateTimeField(null=True, blank=True)
 
     supervisor_id = models.IntegerField(null=True, blank=True)
     supervisor_remarks = models.TextField(blank=True, null=True)
-    reviewer_photo = models.ImageField(upload_to='reviewer_photos/', null=True, blank=True)
+    reviewer_photo = models.ImageField(
+        upload_to='reviewer_photos/', null=True, blank=True)
     supervised_at = models.DateTimeField(null=True, blank=True)
 
-    inspector_photo = models.ImageField(upload_to='inspector_photos/', null=True, blank=True)
+    inspector_photo = models.ImageField(
+        upload_to='inspector_photos/', null=True, blank=True)
     checker_id = models.IntegerField(null=True, blank=True)
     checked_at = models.DateTimeField(null=True, blank=True)
     checker_remarks = models.TextField(blank=True, null=True)
 
-    remarks=models.TextField(blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Submission for {self.checklist_item.title} - {self.status}"
-
-
-
-
 
 
 # # Not started unil intializer start
@@ -120,15 +138,14 @@ class ChecklistItemSubmission(models.Model):
 #     ('NOT_STARTED', 'Not Started'),
 #     ('IN_PROGRESS', 'In Progress'),
 #     ('COMPLETED', 'Completed'),
-# )  
+# )
 
 # # Inspector wil se in_progress until he approves
 
 
-
 # CHECKLISTITEM_STATUS_CHOICES = (
 #     ('NOT_STARTED', 'Not Started'),  ## remove his if started he chechklist this will start beacuse al of it
-#     ('IN_PROGRESS', 'In Progress'),  ## if main chechklist in_progress then chechker will see in_porogresss 
+#     ('IN_PROGRESS', 'In Progress'),  ## if main chechklist in_progress then chechker will see in_porogresss
 #     ('DONE', 'Done by Maker'),
 #     ('VERIFIED', 'Verified by Checker'),
 #     ('REVIEW_REJECTED', 'Rejected by Reviewer'),
@@ -148,10 +165,6 @@ class ChecklistItemSubmission(models.Model):
 #     ('P', 'Positive'),
 #     ('N', 'Negative'),
 # )
-
-
-
-
 
 
 # class Checklist(models.Model):
@@ -180,7 +193,8 @@ class ChecklistItemSubmission(models.Model):
 
 #     def _str_(self):
 #         loc = self.flat_id or self.zone_id or self.building_id
-#         return f" {self.id}  Project {self.project_id} - {loc} - Stage {self.stage_id}"
+# return f" {self.id}  Project {self.project_id} - {loc} - Stage
+# {self.stage_id}"
 
 
 # class ChecklistItem(models.Model):
@@ -197,19 +211,19 @@ class ChecklistItemSubmission(models.Model):
 #     is_done = models.BooleanField(default=False)
 
 #     def _str_(self):
-#         return f"Checklist {self.checklist_id} - {self.description} [{self.status}]"
-
+# return f"Checklist {self.checklist_id} - {self.description}
+# [{self.status}]"
 
 
 # class ChecklistItemOption(models.Model):
 #     checklist_item = models.ForeignKey(
 #         ChecklistItem, on_delete=models.CASCADE, related_name='options'
 #     )
-#     label = models.CharField(max_length=50)   
-#     value = models.CharField(max_length=50,choices=choice_ofoption,default="P")   
+#     label = models.CharField(max_length=50)
+#     value = models.CharField(max_length=50,choices=choice_ofoption,default="P")
 
 #     def _str_(self):
-#         return f"{self.label} ({self.value}) for Item {self.checklist_item_id}"
+# return f"{self.label} ({self.value}) for Item {self.checklist_item_id}"
 
 
 # class ChecklistItemSubmission(models.Model):
@@ -228,7 +242,9 @@ class ChecklistItemSubmission(models.Model):
 #     inspected_by_id = models.IntegerField(null=True, blank=True)
 #     inspected_at = models.DateTimeField(null=True, blank=True)
 #     review_remark = models.TextField(blank=True)
-#     review_photo = models.ImageField(upload_to='review_photos/', null=True, blank=True) # optional
+# review_photo = models.ImageField(upload_to='review_photos/', null=True,
+# blank=True) # optional
 
 #     def _str_(self):
-#         return f"Item {self.checklist_item_id} - By {self.user} (Checked: {self.checked_by_id}, Inspected: {self.inspected_by_id})"
+# return f"Item {self.checklist_item_id} - By {self.user} (Checked:
+# {self.checked_by_id}, Inspected: {self.inspected_by_id})"

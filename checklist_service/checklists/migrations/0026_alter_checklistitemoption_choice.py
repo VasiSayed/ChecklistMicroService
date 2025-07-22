@@ -11,8 +11,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name='checklistitemoption',
-            name='choice',
-            field=models.CharField(choices=[('P', 'Positive'), ('N', 'Negative')], max_length=20),
-        ),
-    ]
+            model_name='checklistitemoption', name='choice', field=models.CharField(
+                choices=[
+                    ('P', 'Positive'), ('N', 'Negative')], max_length=20), ), ]

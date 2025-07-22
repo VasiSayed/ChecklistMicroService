@@ -83,75 +83,143 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='checklist',
             name='created_by_id',
-            field=models.IntegerField(blank=True, null=True),
+            field=models.IntegerField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklist',
             name='description',
-            field=models.TextField(blank=True, null=True),
+            field=models.TextField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklist',
             name='title',
-            field=models.CharField(default=1, max_length=255),
+            field=models.CharField(
+                default=1,
+                max_length=255),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='checklistitem',
             name='title',
-            field=models.CharField(default=1, max_length=255),
+            field=models.CharField(
+                default=1,
+                max_length=255),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='checklistitemoption',
             name='choice',
-            field=models.CharField(choices=[('positive', 'Positive'), ('negative', 'Negative')], default=1, max_length=20),
+            field=models.CharField(
+                choices=[
+                    ('positive',
+                     'Positive'),
+                    ('negative',
+                     'Negative')],
+                default=1,
+                max_length=20),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='checklistitemoption',
             name='name',
-            field=models.CharField(default=1, max_length=255),
+            field=models.CharField(
+                default=1,
+                max_length=255),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='inspector_photo',
-            field=models.ImageField(blank=True, null=True, upload_to='inspector_photos/'),
+            field=models.ImageField(
+                blank=True,
+                null=True,
+                upload_to='inspector_photos/'),
         ),
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='remarks',
-            field=models.TextField(blank=True, null=True),
+            field=models.TextField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='reviewer_photo',
-            field=models.ImageField(blank=True, null=True, upload_to='reviewer_photos/'),
+            field=models.ImageField(
+                blank=True,
+                null=True,
+                upload_to='reviewer_photos/'),
         ),
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='supervised_at',
-            field=models.DateTimeField(blank=True, null=True),
+            field=models.DateTimeField(
+                blank=True,
+                null=True),
         ),
         migrations.AlterField(
             model_name='checklist',
             name='status',
-            field=models.CharField(choices=[('not_started', 'Not Started'), ('in_progress', 'In Progress'), ('completed', 'Completed')], default='not_started', max_length=20),
+            field=models.CharField(
+                choices=[
+                    ('not_started',
+                     'Not Started'),
+                    ('in_progress',
+                     'In Progress'),
+                    ('completed',
+                     'Completed')],
+                default='not_started',
+                max_length=20),
         ),
         migrations.AlterField(
             model_name='checklistitem',
             name='description',
-            field=models.TextField(blank=True, null=True),
+            field=models.TextField(
+                blank=True,
+                null=True),
         ),
         migrations.AlterField(
             model_name='checklistitem',
             name='status',
-            field=models.CharField(choices=[('not_started', 'Not Started'), ('in_progress', 'In Progress'), ('pending_for_maker', 'Pending for Maker'), ('pending_for_inspector', 'Pending for Inspector'), ('pending_for_supervisor', 'Pending for Supervisor'), ('completed', 'Completed')], default='not_started', max_length=30),
+            field=models.CharField(
+                choices=[
+                    ('not_started',
+                     'Not Started'),
+                    ('in_progress',
+                     'In Progress'),
+                    ('pending_for_maker',
+                     'Pending for Maker'),
+                    ('pending_for_inspector',
+                     'Pending for Inspector'),
+                    ('pending_for_supervisor',
+                     'Pending for Supervisor'),
+                    ('completed',
+                     'Completed')],
+                default='not_started',
+                max_length=30),
         ),
         migrations.AlterField(
             model_name='checklistitemsubmission',
             name='status',
-            field=models.CharField(choices=[('created', 'Created'), ('pending_supervisor', 'Pending Supervisor'), ('pending_checker', 'Pending Checker'), ('completed', 'Completed'), ('rejected_by_supervisor', 'Rejected by Supervisor'), ('rejected_by_checker', 'Rejected by Checker')], default='created', max_length=30),
+            field=models.CharField(
+                choices=[
+                    ('created',
+                     'Created'),
+                    ('pending_supervisor',
+                     'Pending Supervisor'),
+                    ('pending_checker',
+                     'Pending Checker'),
+                    ('completed',
+                     'Completed'),
+                    ('rejected_by_supervisor',
+                     'Rejected by Supervisor'),
+                    ('rejected_by_checker',
+                     'Rejected by Checker')],
+                default='created',
+                max_length=30),
         ),
     ]

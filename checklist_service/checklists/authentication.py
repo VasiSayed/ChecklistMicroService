@@ -1,8 +1,21 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+
 class JWTProxyUser:
-    def __init__(self, user_id=None, username="", email="", phone_number="", has_access=False, is_client=False,
-                 user_access_id=None, project_id=None, building_id=None, zone_id=None, flat_id=None, roles=None):
+    def __init__(
+            self,
+            user_id=None,
+            username="",
+            email="",
+            phone_number="",
+            has_access=False,
+            is_client=False,
+            user_access_id=None,
+            project_id=None,
+            building_id=None,
+            zone_id=None,
+            flat_id=None,
+            roles=None):
         self.id = user_id
         self.username = username
         self.email = email
@@ -16,6 +29,7 @@ class JWTProxyUser:
         self.flat_id = flat_id
         self.roles = roles or []
         self.is_authenticated = True
+
 
 class JWTRemoteAuth(JWTAuthentication):
     def get_user(self, validated_token):

@@ -12,18 +12,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RemoveField(
-            model_name='checklist',
-            name='roles_json',
-        ),
-        migrations.CreateModel(
-            name='ChecklistAccess',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('initiators', models.JSONField(blank=True, default=list)),
-                ('makers', models.JSONField(blank=True, default=list)),
-                ('checkers', models.JSONField(blank=True, default=list)),
-                ('supervisors', models.JSONField(blank=True, default=list)),
-                ('checklist', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='access', to='checklists.checklist')),
-            ],
-        ),
-    ]
+            model_name='checklist', name='roles_json', ), migrations.CreateModel(
+            name='ChecklistAccess', fields=[
+                ('id', models.BigAutoField(
+                    auto_created=True, primary_key=True, serialize=False, verbose_name='ID')), ('initiators', models.JSONField(
+                        blank=True, default=list)), ('makers', models.JSONField(
+                            blank=True, default=list)), ('checkers', models.JSONField(
+                                blank=True, default=list)), ('supervisors', models.JSONField(
+                                    blank=True, default=list)), ('checklist', models.OneToOneField(
+                                        on_delete=django.db.models.deletion.CASCADE, related_name='access', to='checklists.checklist')), ], ), ]

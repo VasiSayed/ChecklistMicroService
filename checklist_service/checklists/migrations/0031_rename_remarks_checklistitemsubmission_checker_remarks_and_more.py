@@ -18,16 +18,23 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='maker_media',
-            field=models.ImageField(blank=True, null=True, upload_to='maker_media/'),
+            field=models.ImageField(
+                blank=True,
+                null=True,
+                upload_to='maker_media/'),
         ),
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='maker_remarks',
-            field=models.TextField(blank=True, null=True),
+            field=models.TextField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='supervisor_remarks',
-            field=models.TextField(blank=True, null=True),
+            field=models.TextField(
+                blank=True,
+                null=True),
         ),
     ]

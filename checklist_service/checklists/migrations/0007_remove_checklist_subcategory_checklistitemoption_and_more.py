@@ -18,15 +18,33 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ChecklistItemOption',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('label', models.CharField(max_length=50)),
-                ('value', models.CharField(max_length=50)),
-                ('checklist_item', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='options', to='checklists.checklistitem')),
+                ('id',
+                 models.BigAutoField(
+                     auto_created=True,
+                     primary_key=True,
+                     serialize=False,
+                     verbose_name='ID')),
+                ('label',
+                 models.CharField(
+                     max_length=50)),
+                ('value',
+                 models.CharField(
+                     max_length=50)),
+                ('checklist_item',
+                 models.ForeignKey(
+                     on_delete=django.db.models.deletion.CASCADE,
+                     related_name='options',
+                     to='checklists.checklistitem')),
             ],
         ),
         migrations.AddField(
             model_name='checklistitemsubmission',
             name='selected_option',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='submissions', to='checklists.checklistitemoption'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='submissions',
+                to='checklists.checklistitemoption'),
         ),
     ]

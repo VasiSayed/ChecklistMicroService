@@ -6,13 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checklists', '0024_rename_is_done_checklistitem_ignore_now_and_more'),
-    ]
+        ('checklists', '0024_rename_is_done_checklistitem_ignore_now_and_more'), ]
 
     operations = [
         migrations.AlterField(
             model_name='checklist',
             name='status',
-            field=models.CharField(choices=[('not_started', 'Not Started'), ('in_progress', 'In Progress'), ('work_in_progress', 'Work in Progress'), ('completed', 'Completed')], default='not_started', max_length=20),
+            field=models.CharField(
+                choices=[
+                    ('not_started',
+                     'Not Started'),
+                    ('in_progress',
+                     'In Progress'),
+                    ('work_in_progress',
+                     'Work in Progress'),
+                    ('completed',
+                     'Completed')],
+                default='not_started',
+                max_length=20),
         ),
     ]

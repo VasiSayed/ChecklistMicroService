@@ -13,11 +13,31 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='checklistitem',
             name='status',
-            field=models.CharField(choices=[('PENDING_MAKER', 'Pending Maker'), ('PENDING_CHECKER', 'Pending Checker'), ('PENDING_SUPERVISOR', 'Pending Supervisor'), ('COMPLETE', 'Complete')], default='NOT_STARTED', max_length=20),
+            field=models.CharField(
+                choices=[
+                    ('PENDING_MAKER',
+                     'Pending Maker'),
+                    ('PENDING_CHECKER',
+                     'Pending Checker'),
+                    ('PENDING_SUPERVISOR',
+                     'Pending Supervisor'),
+                    ('COMPLETE',
+                     'Complete')],
+                default='NOT_STARTED',
+                max_length=20),
         ),
         migrations.AlterField(
             model_name='checklistitemsubmission',
             name='status',
-            field=models.CharField(choices=[('SUBMITTED', 'Submitted'), ('APPROVED', 'Approved'), ('REJECTED', 'Rejected')], default='IN_PROGRESS', max_length=25),
+            field=models.CharField(
+                choices=[
+                    ('SUBMITTED',
+                     'Submitted'),
+                    ('APPROVED',
+                     'Approved'),
+                    ('REJECTED',
+                     'Rejected')],
+                default='IN_PROGRESS',
+                max_length=25),
         ),
     ]

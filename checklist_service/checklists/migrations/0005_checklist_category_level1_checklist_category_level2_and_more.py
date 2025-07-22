@@ -6,53 +6,85 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checklists', '0004_rename_submitted_at_checklistitemsubmission_accepted_at_and_more'),
+        ('checklists',
+         '0004_rename_submitted_at_checklistitemsubmission_accepted_at_and_more'),
     ]
 
     operations = [
         migrations.AddField(
             model_name='checklist',
             name='category_level1',
-            field=models.IntegerField(blank=True, null=True),
+            field=models.IntegerField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklist',
             name='category_level2',
-            field=models.IntegerField(blank=True, null=True),
+            field=models.IntegerField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklist',
             name='category_level3',
-            field=models.IntegerField(blank=True, null=True),
+            field=models.IntegerField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklist',
             name='category_level4',
-            field=models.IntegerField(blank=True, null=True),
+            field=models.IntegerField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklist',
             name='category_level5',
-            field=models.IntegerField(blank=True, null=True),
+            field=models.IntegerField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklist',
             name='category_level6',
-            field=models.IntegerField(blank=True, null=True),
+            field=models.IntegerField(
+                blank=True,
+                null=True),
         ),
         migrations.AddField(
             model_name='checklist',
             name='purpose_id',
-            field=models.IntegerField(blank=True, null=True),
+            field=models.IntegerField(
+                blank=True,
+                null=True),
         ),
         migrations.AlterField(
             model_name='checklist',
             name='category',
-            field=models.IntegerField(blank=True, null=True),
+            field=models.IntegerField(
+                blank=True,
+                null=True),
         ),
         migrations.AlterField(
             model_name='checklistitem',
             name='status',
-            field=models.CharField(choices=[('NOT_STARTED', 'Not Started'), ('IN_PROGRESS', 'In Progress'), ('DONE', 'Done by Maker'), ('VERIFYING', 'Verifying by Checker'), ('COMPLETED', 'Completed'), ('REOPENED', 'Reopened')], default='NOT_STARTED', max_length=20),
+            field=models.CharField(
+                choices=[
+                    ('NOT_STARTED',
+                     'Not Started'),
+                    ('IN_PROGRESS',
+                     'In Progress'),
+                    ('DONE',
+                     'Done by Maker'),
+                    ('VERIFYING',
+                     'Verifying by Checker'),
+                    ('COMPLETED',
+                     'Completed'),
+                    ('REOPENED',
+                     'Reopened')],
+                default='NOT_STARTED',
+                max_length=20),
         ),
     ]
