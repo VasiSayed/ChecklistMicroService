@@ -25,128 +25,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
 import requests
-
-
-# class CreateChecklistforUnit(APIView):
-#     UNIT_SERVICE_URL = 'https://konstruct.world/projects/units-by-id/'
-
-#     def post(self, request):
-#         data = request.data
-
-#         # Validation: Required fields
-#         required_fields = ['name', 'project_id', 'created_by_id']
-#         missing_fields = [field for field in required_fields if not data.get(field)]
-#         if missing_fields:
-#             print(f"Missing required fields: {missing_fields}")
-#             return Response(
-#                 {"error": f"Missing required fields: {', '.join(missing_fields)}"},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-
-#         print("All required fields present.")
-
-#         # Extract checklist fields
-#         checklist_fields = {
-#             'name': data.get('name'),
-#             'description': data.get('description'),
-#             'status': data.get('status', 'not_started'),
-#             'project_id': data.get('project_id'),
-#             'building_id': data.get('building_id'),
-#             'zone_id': data.get('zone_id'),
-#             'flat_id': data.get('flat_id'),
-#             'purpose_id': data.get('purpose_id'),
-#             'phase_id': data.get('phase_id'),
-#             'stage_id': data.get('stage_id'),
-#             'category': data.get('category'),
-#             'category_level1': data.get('category_level1'),
-#             'category_level2': data.get('category_level2'),
-#             'category_level3': data.get('category_level3'),
-#             'category_level4': data.get('category_level4'),
-#             'category_level5': data.get('category_level5'),
-#             'category_level6': data.get('category_level6'),
-#             'remarks': data.get('remarks'),
-#             'created_by_id': data.get('created_by_id'),
-#         }
-#         units_payload = {}
-#         if checklist_fields['flat_id']:
-#             units_payload['flat_id'] = checklist_fields['flat_id']
-#         elif checklist_fields['zone_id']:
-#             units_payload['zone_id'] = checklist_fields['zone_id']
-#         elif checklist_fields['building_id']:
-#             units_payload['building_id'] = checklist_fields['building_id']
-#         elif checklist_fields['project_id']:
-#             units_payload['project_id'] = checklist_fields['project_id']
-#         else:
-#             print("Insufficient identifiers provided.")
-# return Response({"error": "Insufficient identifiers provided."},
-# status=400)
-
-#         print(f"Fetching units with payload: {units_payload}")
-#         try:
-#             units_response = requests.get(self.UNIT_SERVICE_URL, params=units_payload)
-#             units_response.raise_for_status()
-#             units_data = units_response.json()
-#             unit_ids = units_data.get('unit_ids', [])
-#             print(f"Unit IDs fetched: {unit_ids}")
-#             if not unit_ids:
-#                 return Response({"error": "No units found for the provided identifiers."}, status=404)
-#         except requests.RequestException as e:
-#             print(f"Request failed: {e}")
-# return Response({"error": f"Failed to fetch units: {str(e)}"},
-# status=500)
-
-#         created_checklists = []
-
-#         # Iterate over unit IDs and create checklists
-#         for unit_id in unit_ids:
-#             try:
-#                 with transaction.atomic():
-#                     print(f"Creating checklist for unit_id: {unit_id}")
-#                     checklist_fields.pop('flat_id', None)
-#                     checklist_instance = Checklist.objects.create(
-#                         **checklist_fields,
-#                         flat_id=unit_id
-#                     )
-
-#                     items = data.get('items', [])
-#                     print(f"Checklist has {len(items)} items.")
-
-#                     for item in items:
-#                         checklist_item = ChecklistItem.objects.create(
-#                             checklist=checklist_instance,
-#                             title=item.get('title'),
-#                             description=item.get('description'),
-#                             status=item.get('status', 'not_started'),
-#                             ignore_now=item.get('ignore_now', False),
-#                             photo_required=item.get('photo_required', False)
-#                         )
-
-#                         options = item.get('options', [])
-#                         print(f"Item '{item.get('title')}' has {len(options)} options.")
-
-#                         for option in options:
-#                             ChecklistItemOption.objects.create(
-#                                 checklist_item=checklist_item,
-#                                 name=option.get('name'),
-#                                 choice=option.get('choice', 'P')
-#                             )
-
-#                     created_checklists.append(checklist_instance.id)
-#             except Exception as e:
-# resp = requests.get(
-#    self.UNIT_DETAILS_URL,
-#    params=payload,
-#    headers=headers
-# )#                 print(f"Error creating checklist for unit_id {unit_id}: {e}")
-# https://konstruct.world/projects/units-by-id/?building_id=2&project_id=5#
-# return Response({"error": f"Failed to create checklist for unit
-# {unit_id}: {str(e)}"}, status=500)
-
-#         print("All checklists created successfully.")
-#         return Response(
-#             {"message": "Checklists created successfully.", "checklist_ids": created_checklists},
-#             status=201
-#         )
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -154,10 +32,11 @@ from django.db import transaction
 import requests
 from .models import Checklist, ChecklistItem, ChecklistItemOption  # adjust as per your project
 
+local="192.168.29.239"
 class CreateChecklistforUnit(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    UNIT_DETAILS_URL = 'https://konstruct.world/projects/units-by-id/'
-
+    # UNIT_DETAILS_URL = 'https://konstruct.world/projects/units-by-id/'
+    UNIT_DETAILS_URL = f'http://{local}:8001/api/units-by-id/'
     def post(self, request):
         data = request.data
         required_fields = ['name', 'project_id', 'created_by_id']
@@ -172,8 +51,6 @@ class CreateChecklistforUnit(APIView):
             'description': data.get('description'),
             'status': data.get('status', 'not_started'),
             'project_id': data.get('project_id'),
-            'building_id': data.get('building_id'),
-            'zone_id': data.get('zone_id'),
             'purpose_id': data.get('purpose_id'),
             'phase_id': data.get('phase_id'),
             'stage_id': data.get('stage_id'),
@@ -195,8 +72,14 @@ class CreateChecklistforUnit(APIView):
             unit_ids = [data['flat_id']]
         elif data.get('unit_ids'):
             unit_ids = data['unit_ids']
-        elif data.get('zone_id') or data.get('building_id') or data.get('project_id'):
-            # Prepare query parameters for dynamic GET
+        elif any([
+            data.get('zone_id'),
+            data.get('building_id'),
+            data.get('project_id'),
+            data.get('level_id'),
+            data.get('floor_id'),
+            data.get('subzone_id')
+        ]):
             params = {}
             if data.get("zone_id"):
                 params["zone_id"] = data.get("zone_id")
@@ -204,6 +87,12 @@ class CreateChecklistforUnit(APIView):
                 params["building_id"] = data.get("building_id")
             if data.get("project_id"):
                 params["project_id"] = data.get("project_id")
+            if data.get("level_id"):
+                params["level_id"] = data.get("level_id")
+            if data.get("floor_id"):
+                params["level_id"] = data.get("floor_id")
+            if data.get("subzone_id"):
+                params["subzone_id"] = data.get("subzone_id")
 
             try:
                 headers = {}
@@ -211,7 +100,6 @@ class CreateChecklistforUnit(APIView):
                 if auth_header:
                     headers["Authorization"] = auth_header
 
-                # ✅ Single GET call
                 resp = requests.get(self.UNIT_DETAILS_URL, params=params, headers=headers)
                 resp.raise_for_status()
                 resp_data = resp.json()
@@ -222,7 +110,7 @@ class CreateChecklistforUnit(APIView):
             except Exception as e:
                 return Response({"error": f"Failed to fetch units: {str(e)}"}, status=500)
         else:
-            return Response({"error": "No flat_id/unit_ids/zone/building/project provided."}, status=400)
+            return Response({"error": "No flat_id/unit_ids/zone/building/project/level/subzone provided."}, status=400)
 
         if not unit_ids:
             return Response({"error": "No unit ids found/provided."}, status=404)
@@ -239,16 +127,27 @@ class CreateChecklistforUnit(APIView):
             if flat_info.get("rooms"):
                 allowed_room_ids = set([r["id"] for r in flat_info["rooms"]])
 
+            # Fetch all hierarchy IDs from unit data, use None if missing
+            building_id = flat_info.get("building_id")
+            zone_id = flat_info.get("zone_id")
+            subzone_id = flat_info.get("subzone_id")
+            level_id = flat_info.get("level_id")
+            project_id = flat_info.get("project_id")
+
             for room_id in selected_room_ids:
                 if int(room_id) in allowed_room_ids:
                     try:
                         with transaction.atomic():
                             fields = checklist_fields.copy()
-                            checklist_instance = Checklist.objects.create(
-                                **fields,
-                                flat_id=unit_id,
-                                room_id=room_id
-                            )
+                            fields['flat_id'] = unit_id
+                            fields['room_id'] = room_id
+                            fields['building_id'] = building_id
+                            fields['zone_id'] = zone_id
+                            fields['subzone_id'] = subzone_id
+                            fields['level_id'] = level_id
+                            fields['project_id'] = project_id
+
+                            checklist_instance = Checklist.objects.create(**fields)
 
                             for item in data.get('items', []):
                                 checklist_item = ChecklistItem.objects.create(
@@ -274,150 +173,6 @@ class CreateChecklistforUnit(APIView):
         return Response({"message": "Checklists created successfully.", "checklist_ids": created_checklists}, status=201)
 
 
-#class CreateChecklistforUnit(APIView):
-#    UNIT_DETAILS_URL = 'https://konstruct.world/projects/units-by-id/'
-#
-#    def post(self, request):
-#        data = request.data
-#        required_fields = ['name', 'project_id', 'created_by_id']
-#        missing_fields = [
-#            field for field in required_fields if not data.get(field)]
-#        if missing_fields:
-#            return Response(
-#                {"error": f"Missing required fields: {', '.join(missing_fields)}"},
-#                status=status.HTTP_400_BAD_REQUEST,
-#            )
-#        user = request.user
-#        checklist_fields = {
-#            'name': data.get('name'),
-#            'description': data.get('description'),
-#            'status': data.get('status', 'not_started'),
-#            'project_id': data.get('project_id'),
-#            'building_id': data.get('building_id'),
-#            'zone_id': data.get('zone_id'),
-#            'purpose_id': data.get('purpose_id'),
-#            'phase_id': data.get('phase_id'),
-#            'stage_id': data.get('stage_id'),
-#            'category': data.get('category'),
-#            'category_level1': data.get('category_level1'),
-#            'category_level2': data.get('category_level2'),
-#            'category_level3': data.get('category_level3'),
-#            'category_level4': data.get('category_level4'),
-#            'category_level5': data.get('category_level5'),
-#            'category_level6': data.get('category_level6'),
-#            'remarks': data.get('remarks'),
-#            'created_by_id': user.id,
-#        }
-#
-#        unit_ids = []
-#        if data.get('flat_id'):
-#            unit_ids = [data['flat_id']]
-#        elif data.get('unit_ids'):
-#            unit_ids = data['unit_ids']
-#        elif data.get('zone_id') or data.get('building_id') or data.get('project_id'):
-#            payload = {}
-#            if data.get('zone_id'):
-#                payload['zone_id'] = data.get('zone_id')
-#            if data.get('building_id'):
-#                payload['building_id'] = data.get('building_id')
-#            if data.get('project_id'):
-#                payload['project_id'] = data.get('project_id')
-#            try:
-#                headers = {}
-#                auth_header = request.headers.get("Authorization")
-#                if auth_header:
-#                    headers["Authorization"] = auth_header
-#
-#                params = {}
-#                if data.get("zone_id"):
-#                    params["zone_id"] = data.get("zone_id")
-#                if data.get("building_id"):
-#                    params["building_id"] = data.get("building_id")
-#                if data.get("project_id"):
-#                    params["project_id"] = data.get("project_id")
-#                resp = requests.get(
-#                    self.UNIT_DETAILS_URL, params=params, headers={
-#                        "Authorization": request.headers.get(
-#                            "Authorization", "")})
-#                resp.raise_for_status()
-#                resp_data = resp.json()
-#                unit_ids = [unit["unit_id"]
-#                            for unit in resp_data.get("units", [])]
-#            except Exception as e:
-#                return Response(
-#                    {"error": f"Failed to fetch units: {str(e)}"}, status=500)
-#        else:
-#            return Response(
-#                {"error": "No flat_id/unit_ids/zone/building/project provided."}, status=400)
-#
-#        if not unit_ids:
-#            return Response(
-#                {"error": "No unit ids found/provided."}, status=404)
-#
-#        try:
-#            resp = requests.get(
-#                self.UNIT_DETAILS_URL, json={
-#                    "ids": unit_ids}, headers={
-#                    "Authorization": request.headers.get(
-#                        "Authorization", "")}, )
-#            resp.raise_for_status()
-#            project_data = resp.json()  # dict of {id: flat_obj}
-#        except Exception as e:
-#            return Response(
-#                {"error": f"Failed to fetch unit details: {str(e)}"}, status=500)
-#
-#        selected_room_ids = data.get('rooms', [])
-#        created_checklists = []
-#
-#        for unit_id in unit_ids:
-#            flat_info = project_data.get(str(unit_id))
-#            if not flat_info:
-#                continue
-#            allowed_room_ids = set()
-#            if flat_info.get(
-#                    "flattype") and flat_info["flattype"].get("rooms"):
-#                allowed_room_ids = set(
-#                    [r["id"] for r in flat_info["flattype"]["rooms"]])
-#
-#            for room_id in selected_room_ids:
-#                if int(room_id) in allowed_room_ids:
-#                    try:
-#                        with transaction.atomic():
-#                            fields = checklist_fields.copy()
-#                            fields.pop('flat_id', None)
-#                            fields.pop('room_id', None)
-#                            checklist_instance = Checklist.objects.create(
-#                                **fields,
-#                                flat_id=unit_id,
-#                                room_id=room_id
-#                            )
-#                            # Items/options (nested create)
-#                            items = data.get('items', [])
-#                            for item in items:
-#                                checklist_item = ChecklistItem.objects.create(
-#                                    checklist=checklist_instance,
-#                                    title=item.get('title'),
-#                                    description=item.get('description'),
-#                                    status=item.get('status', 'not_started'),
-#                                    ignore_now=item.get('ignore_now', False),
-#                                    photo_required=item.get('photo_required', False)
-#                                )
-#                                options = item.get('options', [])
-#                                for option in options:
-#                                    ChecklistItemOption.objects.create(
-#                                        checklist_item=checklist_item,
-#                                        name=option.get('name'),
-#                                        choice=option.get('choice', 'P')
-#                                    )
-#                            created_checklists.append(checklist_instance.id)
-#                    except Exception as e:
-#                        return Response(
-#                            {"error": f"Failed to create checklist for unit {unit_id}, room {room_id}: {str(e)}"}, status=500)
-
-#        return Response({"message": "Checklists created successfully.",
-#                         "checklist_ids": created_checklists}, status=201)
-#
-
 class ChecklistRoleAnalyticsAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -428,30 +183,36 @@ class ChecklistRoleAnalyticsAPIView(APIView):
 
         if not user_id or not project_id or not role:
             return Response(
-                {"detail": "user_id, project_id, and role are required"}, status=400)
+                {"detail": "user_id, project_id, and role are required"}, status=400
+            )
 
-        role_upper = role.upper()
-        if role_upper == "SUPERVISOR":
-            data = get_supervisor_analytics(user_id, project_id)
-        elif role_upper == "MAKER":
-            data = get_maker_analytics(user_id, project_id)
-        elif role_upper == "CHECKER":
-            data = get_checker_analytics(user_id, project_id)
-        elif role_upper == "INTIALIZER":
-            data = get_intializer_analytics(user_id, project_id, request)
-        else:
+        try:
+            role_upper = role.upper()
+            if role_upper == "SUPERVISOR":
+                data = get_supervisor_analytics(user_id, project_id)
+            elif role_upper == "MAKER":
+                data = get_maker_analytics(user_id, project_id)
+            elif role_upper == "CHECKER":
+                data = get_checker_analytics(user_id, project_id)
+            elif role_upper == "INTIALIZER":
+                data = get_intializer_analytics(user_id, project_id, request)
+            else:
+                return Response(
+                    {"detail": f"Role '{role}' not supported"}, status=400
+                )
+        except Exception as e:
+            print("Exception in ChecklistRoleAnalyticsAPIView:", str(e))
+            traceback.print_exc()
             return Response(
-                {"detail": f"Role '{role}' not supported"}, status=400)
+                {"detail": "Internal Server Error", "error": str(e)},
+                status=500
+            )
 
         return Response(data, status=200)
 
-
 def get_intializer_analytics(user_id, project_id, request):
-    # Use same logic as your CHecklist_View_FOr_INtializer, but just count the
-    # checklists
-
-    # Fetch user accesses from USER_SERVICE (external call)
-    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+    # USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+    USER_SERVICE_URL = "https://{local}:8000/api/user-access/"
     token = None
     auth_header = request.headers.get("Authorization")
     if auth_header:
@@ -623,6 +384,270 @@ class ChecklistByCreatorAndProjectAPIView(APIView):
         serializer = ChecklistSerializer(qs, many=True)
         return Response(serializer.data, status=200)
 
+# class CreateChecklistforUnit(APIView):
+#     UNIT_SERVICE_URL = 'https://konstruct.world/projects/units-by-id/'
+
+#     def post(self, request):
+#         data = request.data
+
+#         # Validation: Required fields
+#         required_fields = ['name', 'project_id', 'created_by_id']
+#         missing_fields = [field for field in required_fields if not data.get(field)]
+#         if missing_fields:
+#             print(f"Missing required fields: {missing_fields}")
+#             return Response(
+#                 {"error": f"Missing required fields: {', '.join(missing_fields)}"},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         print("All required fields present.")
+
+#         # Extract checklist fields
+#         checklist_fields = {
+#             'name': data.get('name'),
+#             'description': data.get('description'),
+#             'status': data.get('status', 'not_started'),
+#             'project_id': data.get('project_id'),
+#             'building_id': data.get('building_id'),
+#             'zone_id': data.get('zone_id'),
+#             'flat_id': data.get('flat_id'),
+#             'purpose_id': data.get('purpose_id'),
+#             'phase_id': data.get('phase_id'),
+#             'stage_id': data.get('stage_id'),
+#             'category': data.get('category'),
+#             'category_level1': data.get('category_level1'),
+#             'category_level2': data.get('category_level2'),
+#             'category_level3': data.get('category_level3'),
+#             'category_level4': data.get('category_level4'),
+#             'category_level5': data.get('category_level5'),
+#             'category_level6': data.get('category_level6'),
+#             'remarks': data.get('remarks'),
+#             'created_by_id': data.get('created_by_id'),
+#         }
+#         units_payload = {}
+#         if checklist_fields['flat_id']:
+#             units_payload['flat_id'] = checklist_fields['flat_id']
+#         elif checklist_fields['zone_id']:
+#             units_payload['zone_id'] = checklist_fields['zone_id']
+#         elif checklist_fields['building_id']:
+#             units_payload['building_id'] = checklist_fields['building_id']
+#         elif checklist_fields['project_id']:
+#             units_payload['project_id'] = checklist_fields['project_id']
+#         else:
+#             print("Insufficient identifiers provided.")
+# return Response({"error": "Insufficient identifiers provided."},
+# status=400)
+
+#         print(f"Fetching units with payload: {units_payload}")
+#         try:
+#             units_response = requests.get(self.UNIT_SERVICE_URL, params=units_payload)
+#             units_response.raise_for_status()
+#             units_data = units_response.json()
+#             unit_ids = units_data.get('unit_ids', [])
+#             print(f"Unit IDs fetched: {unit_ids}")
+#             if not unit_ids:
+#                 return Response({"error": "No units found for the provided identifiers."}, status=404)
+#         except requests.RequestException as e:
+#             print(f"Request failed: {e}")
+# return Response({"error": f"Failed to fetch units: {str(e)}"},
+# status=500)
+
+#         created_checklists = []
+
+#         # Iterate over unit IDs and create checklists
+#         for unit_id in unit_ids:
+#             try:
+#                 with transaction.atomic():
+#                     print(f"Creating checklist for unit_id: {unit_id}")
+#                     checklist_fields.pop('flat_id', None)
+#                     checklist_instance = Checklist.objects.create(
+#                         **checklist_fields,
+#                         flat_id=unit_id
+#                     )
+
+#                     items = data.get('items', [])
+#                     print(f"Checklist has {len(items)} items.")
+
+#                     for item in items:
+#                         checklist_item = ChecklistItem.objects.create(
+#                             checklist=checklist_instance,
+#                             title=item.get('title'),
+#                             description=item.get('description'),
+#                             status=item.get('status', 'not_started'),
+#                             ignore_now=item.get('ignore_now', False),
+#                             photo_required=item.get('photo_required', False)
+#                         )
+
+#                         options = item.get('options', [])
+#                         print(f"Item '{item.get('title')}' has {len(options)} options.")
+
+#                         for option in options:
+#                             ChecklistItemOption.objects.create(
+#                                 checklist_item=checklist_item,
+#                                 name=option.get('name'),
+#                                 choice=option.get('choice', 'P')
+#                             )
+
+#                     created_checklists.append(checklist_instance.id)
+#             except Exception as e:
+# resp = requests.get(
+#    self.UNIT_DETAILS_URL,
+#    params=payload,
+#    headers=headers
+# )#                 print(f"Error creating checklist for unit_id {unit_id}: {e}")
+# https://konstruct.world/projects/units-by-id/?building_id=2&project_id=5#
+# return Response({"error": f"Failed to create checklist for unit
+# {unit_id}: {str(e)}"}, status=500)
+
+#         print("All checklists created successfully.")
+#         return Response(
+#             {"message": "Checklists created successfully.", "checklist_ids": created_checklists},
+#             status=201
+#         )
+
+#class CreateChecklistforUnit(APIView):
+#    UNIT_DETAILS_URL = 'https://konstruct.world/projects/units-by-id/'
+#
+#    def post(self, request):
+#        data = request.data
+#        required_fields = ['name', 'project_id', 'created_by_id']
+#        missing_fields = [
+#            field for field in required_fields if not data.get(field)]
+#        if missing_fields:
+#            return Response(
+#                {"error": f"Missing required fields: {', '.join(missing_fields)}"},
+#                status=status.HTTP_400_BAD_REQUEST,
+#            )
+#        user = request.user
+#        checklist_fields = {
+#            'name': data.get('name'),
+#            'description': data.get('description'),
+#            'status': data.get('status', 'not_started'),
+#            'project_id': data.get('project_id'),
+#            'building_id': data.get('building_id'),
+#            'zone_id': data.get('zone_id'),
+#            'purpose_id': data.get('purpose_id'),
+#            'phase_id': data.get('phase_id'),
+#            'stage_id': data.get('stage_id'),
+#            'category': data.get('category'),
+#            'category_level1': data.get('category_level1'),
+#            'category_level2': data.get('category_level2'),
+#            'category_level3': data.get('category_level3'),
+#            'category_level4': data.get('category_level4'),
+#            'category_level5': data.get('category_level5'),
+#            'category_level6': data.get('category_level6'),
+#            'remarks': data.get('remarks'),
+#            'created_by_id': user.id,
+#        }
+#
+#        unit_ids = []
+#        if data.get('flat_id'):
+#            unit_ids = [data['flat_id']]
+#        elif data.get('unit_ids'):
+#            unit_ids = data['unit_ids']
+#        elif data.get('zone_id') or data.get('building_id') or data.get('project_id'):
+#            payload = {}
+#            if data.get('zone_id'):
+#                payload['zone_id'] = data.get('zone_id')
+#            if data.get('building_id'):
+#                payload['building_id'] = data.get('building_id')
+#            if data.get('project_id'):
+#                payload['project_id'] = data.get('project_id')
+#            try:
+#                headers = {}
+#                auth_header = request.headers.get("Authorization")
+#                if auth_header:
+#                    headers["Authorization"] = auth_header
+#
+#                params = {}
+#                if data.get("zone_id"):
+#                    params["zone_id"] = data.get("zone_id")
+#                if data.get("building_id"):
+#                    params["building_id"] = data.get("building_id")
+#                if data.get("project_id"):
+#                    params["project_id"] = data.get("project_id")
+#                resp = requests.get(
+#                    self.UNIT_DETAILS_URL, params=params, headers={
+#                        "Authorization": request.headers.get(
+#                            "Authorization", "")})
+#                resp.raise_for_status()
+#                resp_data = resp.json()
+#                unit_ids = [unit["unit_id"]
+#                            for unit in resp_data.get("units", [])]
+#            except Exception as e:
+#                return Response(
+#                    {"error": f"Failed to fetch units: {str(e)}"}, status=500)
+#        else:
+#            return Response(
+#                {"error": "No flat_id/unit_ids/zone/building/project provided."}, status=400)
+#
+#        if not unit_ids:
+#            return Response(
+#                {"error": "No unit ids found/provided."}, status=404)
+#
+#        try:
+#            resp = requests.get(
+#                self.UNIT_DETAILS_URL, json={
+#                    "ids": unit_ids}, headers={
+#                    "Authorization": request.headers.get(
+#                        "Authorization", "")}, )
+#            resp.raise_for_status()
+#            project_data = resp.json()  # dict of {id: flat_obj}
+#        except Exception as e:
+#            return Response(
+#                {"error": f"Failed to fetch unit details: {str(e)}"}, status=500)
+#
+#        selected_room_ids = data.get('rooms', [])
+#        created_checklists = []
+#
+#        for unit_id in unit_ids:
+#            flat_info = project_data.get(str(unit_id))
+#            if not flat_info:
+#                continue
+#            allowed_room_ids = set()
+#            if flat_info.get(
+#                    "flattype") and flat_info["flattype"].get("rooms"):
+#                allowed_room_ids = set(
+#                    [r["id"] for r in flat_info["flattype"]["rooms"]])
+#
+#            for room_id in selected_room_ids:
+#                if int(room_id) in allowed_room_ids:
+#                    try:
+#                        with transaction.atomic():
+#                            fields = checklist_fields.copy()
+#                            fields.pop('flat_id', None)
+#                            fields.pop('room_id', None)
+#                            checklist_instance = Checklist.objects.create(
+#                                **fields,
+#                                flat_id=unit_id,
+#                                room_id=room_id
+#                            )
+#                            # Items/options (nested create)
+#                            items = data.get('items', [])
+#                            for item in items:
+#                                checklist_item = ChecklistItem.objects.create(
+#                                    checklist=checklist_instance,
+#                                    title=item.get('title'),
+#                                    description=item.get('description'),
+#                                    status=item.get('status', 'not_started'),
+#                                    ignore_now=item.get('ignore_now', False),
+#                                    photo_required=item.get('photo_required', False)
+#                                )
+#                                options = item.get('options', [])
+#                                for option in options:
+#                                    ChecklistItemOption.objects.create(
+#                                        checklist_item=checklist_item,
+#                                        name=option.get('name'),
+#                                        choice=option.get('choice', 'P')
+#                                    )
+#                            created_checklists.append(checklist_instance.id)
+#                    except Exception as e:
+#                        return Response(
+#                            {"error": f"Failed to create checklist for unit {unit_id}, room {room_id}: {str(e)}"}, status=500)
+
+#        return Response({"message": "Checklists created successfully.",
+#                         "checklist_ids": created_checklists}, status=201)
+#
 
 # class CHecklist_View_FOr_INtializer(APIView):
 #     permission_classes = [permissions.IsAuthenticated]
@@ -801,9 +826,10 @@ class ChecklistByCreatorAndProjectAPIView(APIView):
 
 class CHecklist_View_FOr_INtializer(APIView):
     permission_classes = [IsAuthenticated]
-    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
-    ROOM_SERVICE_URL = "https://konstruct.world/project/rooms/"
-
+    # USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+    # ROOM_SERVICE_URL = "https://konstruct.world/project/rooms/"
+    USER_SERVICE_URL = "https://{local}:8000/api/user-access/"
+    ROOM_SERVICE_URL = "https://{local}:8001/api/rooms/"
     def get(self, request):
         user_id = request.user.id
         project_id = request.query_params.get("project_id")
@@ -823,7 +849,6 @@ class CHecklist_View_FOr_INtializer(APIView):
 
         headers = {"Authorization": f"Bearer {token}"} if token else {}
 
-        # Fetch user access from USER SERVICE
         try:
             resp = requests.get(
                 self.USER_SERVICE_URL,
@@ -899,7 +924,6 @@ class CHecklist_View_FOr_INtializer(APIView):
             except Exception:
                 continue
 
-        # Step 4: Serialize and group by room_id
         serialized_checklists = ChecklistSerializer(checklists, many=True).data
 
         grouped = defaultdict(
@@ -947,104 +971,11 @@ class IntializeChechklistView(APIView):
             status=status.HTTP_200_OK,
         )
 
-
-# class CheckerInprogressAccessibleChecklists(APIView):
-#     permission_classes = [IsAuthenticated]
-#     USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
-
-#     def get(self, request):
-#         user_id = request.user.id
-#         project_id = request.query_params.get("project_id")
-#         if not user_id or not project_id:
-# return Response({"detail": "user_id and project_id required."},
-# status=400)
-
-#         # --- Fetch user access
-#         token = None
-#         auth_header = request.headers.get("Authorization")
-#         if auth_header:
-#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-#         headers = {}
-#         if token:
-#             headers["Authorization"] = f"Bearer {token}"
-
-#         try:
-#             resp = requests.get(
-#                 self.USER_SERVICE_URL,
-#                 params={"user_id": user_id, "project_id": project_id},
-#                 timeout=5,
-#                 headers=headers
-#             )
-#             if resp.status_code != 200:
-#                 return Response({"detail": "Could not fetch user access"}, status=400)
-#             accesses = resp.json()
-#         except Exception as e:
-# return Response({"detail": "User service error", "error": str(e)},
-# status=400)
-
-#         q = Q()
-#         for access in accesses:
-#             cat_q = Q()
-#             if access.get('category'):
-#                 cat_q &= Q(category=access['category'])
-#                 for i in range(1, 7):
-#                     key = f'CategoryLevel{i}'
-#                     if access.get(key) is not None:
-#                         cat_q &= Q(**{f'category_level{i}': access[key]})
-#                     else:
-#                         break
-#             loc_q = Q()
-#             if access.get('flat_id'):
-#                 loc_q &= Q(flat_id=access['flat_id'])
-#             elif access.get('zone_id'):
-#                 loc_q &= Q(zone_id=access['zone_id'])
-#             elif access.get('building_id'):
-#                 loc_q &= Q(building_id=access['building_id'])
-#             q |= (cat_q & loc_q)
-
-
-#         assigned_item_exists = ChecklistItem.objects.filter(
-#             checklist=OuterRef('pk'),
-#             status="pending_for_inspector",
-#             submissions__checker_id=user_id,
-#             submissions__status="pending_checker"
-#         )
-
-
-#         available_item_exists = ChecklistItem.objects.filter(
-#             checklist=OuterRef('pk'),
-#             status="pending_for_inspector",
-#             # submissions__status="pending_checker",
-#             submissions__checker_id__isnull=True
-#         )
-
-#         base_qs = Checklist.objects.filter(project_id=project_id)
-#         if q:
-#             base_qs = base_qs.filter(q).distinct()
-#         else:
-#             base_qs = Checklist.objects.none()
-
-#         assigned_to_me = base_qs.annotate(
-#             has_assigned=Exists(assigned_item_exists)
-#         ).filter(has_assigned=True)
-
-#         available_for_me = base_qs.annotate(
-#             has_available=Exists(available_item_exists)
-#         ).filter(has_available=True)
-
-
-#         response = {
-#             "assigned_to_me": ChecklistWithItemsAndSubmissionsSerializer(assigned_to_me, many=True).data,
-#             "available_for_me": ChecklistWithItemsAndSubmissionsSerializer(available_for_me, many=True).data
-#         }
-#         print(response)
-#         return Response(response, status=200)
-
-
 # Newwww
 class CheckerInprogressAccessibleChecklists(APIView):
     permission_classes = [IsAuthenticated]
-    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+    # USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+    USER_SERVICE_URL = "https://{local}:8000/api/user-access/"
 
     def get(self, request):
         user_id = request.user.id
@@ -1418,124 +1349,11 @@ class VerifyChecklistItemForCheckerNSupervisorAPIView(APIView):
                 {"detail": "Invalid role. Must be 'checker' or 'supervisor'."}, status=400)
 
 
-# class PendingForMakerItemsAPIView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-#     USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
 
-#     def get(self, request):
-#         user_id = request.user.id
-#         project_id = request.query_params.get("project_id")
-#         if not user_id or not project_id:
-# return Response({"detail": "user_id and project_id required."},
-# status=400)
-
-#         # --- Fetch user access
-#         token = None
-#         auth_header = request.headers.get("Authorization")
-#         if auth_header:
-#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-#         headers = {}
-#         if token:
-#             headers["Authorization"] = f"Bearer {token}"
-#         try:
-#             resp = requests.get(
-#                 self.USER_SERVICE_URL,
-#                 params={"user_id": user_id, "project_id": project_id},
-#                 timeout=5,
-#                 headers=headers
-#             )
-#             if resp.status_code != 200:
-#                 return Response({"detail": "Could not fetch user access"}, status=400)
-#             accesses = resp.json()
-#         except Exception as e:
-# return Response({"detail": "User service error", "error": str(e)},
-# status=400)
-
-#         q = Q()
-#         for access in accesses:
-#             cat_q = Q()
-#             if access.get('category'):
-#                 cat_q &= Q(category=access['category'])
-#                 for i in range(1, 7):
-#                     key = f'CategoryLevel{i}'
-#                     if access.get(key) is not None:
-#                         cat_q &= Q(**{f'category_level{i}': access[key]})
-#                     else:
-#                         break
-#             loc_q = Q()
-#             if access.get('flat_id'):
-#                 loc_q &= Q(flat_id=access['flat_id'])
-#             elif access.get('zone_id'):
-#                 loc_q &= Q(zone_id=access['zone_id'])
-#             elif access.get('building_id'):
-#                 loc_q &= Q(building_id=access['building_id'])
-#             q |= (cat_q & loc_q)
-
-#         # Subquery to get latest submission id for each item
-#         latest_submission_subq = ChecklistItemSubmission.objects.filter(
-#             checklist_item=OuterRef('pk')
-#         ).order_by('-attempts', '-created_at').values('id')[:1]
-
-
-#         items = ChecklistItem.objects.filter(
-#             checklist__project_id=project_id,
-#             checklist__in=Checklist.objects.filter(q),
-#             status="pending_for_maker"
-#         )
-
-#         print(items)
-#         base_items = ChecklistItem.objects.filter(
-#             checklist__project_id=project_id,
-#             checklist__in=Checklist.objects.filter(q),
-#             status="pending_for_maker"
-#         ).annotate(
-#             latest_submission_id=Subquery(latest_submission_subq)
-#         )
-
-#         # 1. Rework items assigned to this maker
-#         rework_items = base_items.filter(
-#             submissions__id=F('latest_submission_id'),
-#             submissions__maker_id=user_id,
-#             submissions__status="created"
-#         ).distinct()
-
-#         # 2. Fresh items not yet picked up by any maker
-#         fresh_items = base_items.filter(
-#             submissions__id=F('latest_submission_id'),
-#             submissions__maker_id__isnull=True,
-#             submissions__status="created"
-#         ).distinct()
-
-#         # Combine or keep them separate as per your use-case
-#         # Here, returning as two lists for clarity
-#         def serialize_items_with_submission(qs):
-#             out = []
-#             for item in qs:
-#                 item_data = ChecklistItemSerializer(item).data
-#                 # Attach latest submission details if available
-#                 latest_sub = ChecklistItemSubmission.objects.filter(
-#                     checklist_item=item
-#                 ).order_by('-attempts', '-created_at').first()
-#                 item_data["latest_submission"] = (
-#                     ChecklistItemSubmissionSerializer(latest_sub).data
-#                     if latest_sub else None
-#                 )
-#                 out.append(item_data)
-#             return out
-
-#         response = {
-#             "assigned_to_me": serialize_items_with_submission(rework_items),
-#             "available_for_me": serialize_items_with_submission(fresh_items),
-#         }
-#         print(response)
-#         return Response(response, status=200)
-
-
-# Newwww
 class PendingForMakerItemsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
-
+    # USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+    USER_SERVICE_URL = "https://{local}:8000/api/user-access/"
     def get(self, request):
         user_id = request.user.id
         project_id = request.query_params.get("project_id")
@@ -1737,128 +1555,23 @@ class MAker_DOne_view(APIView):
             "maker_id": latest_submission.maker_id,
             "supervisor_id": latest_submission.supervisor_id,
         }
-        print("Returning success response with item and submission data.")
-        return Response({
-            "item": item_data,
-            "submission": submission_data
-        }, status=200)
+    permission_classes = [permissions.IsAuthenticated]
 
-
-# class PendingForSupervisorItemsAPIView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-#     USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
-
-#     def get(self, request):
-#         user_id = request.user.id
-#         project_id = request.query_params.get("project_id")
-
-#         if not user_id or not project_id:
-# return Response({"detail": "user_id and project_id required."},
-# status=400)
-
-#         # Fetch user access
-#         token = None
-#         auth_header = request.headers.get("Authorization")
-#         if auth_header:
-#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-
-#         headers = {}
-#         if token:
-#             headers["Authorization"] = f"Bearer {token}"
-
-#         try:
-#             resp = requests.get(
-#                 self.USER_SERVICE_URL,
-#                 params={"user_id": user_id, "project_id": project_id},
-#                 timeout=5,
-#                 headers=headers
-#             )
-#             if resp.status_code != 200:
-#                 return Response({"detail": "Could not fetch user access"}, status=400)
-#             accesses = resp.json()
-#         except Exception as e:
-# return Response({"detail": "User service error", "error": str(e)},
-# status=400)
-
-#         q = Q()
-#         for access in accesses:
-#             cat_q = Q()
-#             if access.get('category'):
-#                 cat_q &= Q(category=access['category'])
-#                 for i in range(1, 7):
-#                     key = f'CategoryLevel{i}'
-#                     if access.get(key) is not None:
-#                         cat_q &= Q(**{f'category_level{i}': access[key]})
-#                     else:
-#                         break
-
-#             loc_q = Q()
-#             if access.get('flat_id'):
-#                 loc_q &= Q(flat_id=access['flat_id'])
-#             elif access.get('zone_id'):
-#                 loc_q &= Q(zone_id=access['zone_id'])
-#             elif access.get('building_id'):
-#                 loc_q &= Q(building_id=access['building_id'])
-
-#             q |= (cat_q & loc_q)
-
-#         latest_submission_subq = ChecklistItemSubmission.objects.filter(
-#             checklist_item=OuterRef('pk')
-#         ).order_by('-attempts', '-created_at').values('id')[:1]
-
-#         base_items = ChecklistItem.objects.filter(
-#             checklist__project_id=project_id,
-#             checklist__in=Checklist.objects.filter(q),
-#             status="pending_for_supervisor"
-#         ).annotate(
-#             latest_submission_id=Subquery(latest_submission_subq)
-#         )
-
-#         assigned_to_me = base_items.filter(
-#             submissions__id=F('latest_submission_id'),
-#             submissions__supervisor_id=user_id,
-#             submissions__status="pending_supervisor"
-#         ).distinct()
-
-#         available_for_me = base_items.filter(
-#             submissions__id=F('latest_submission_id'),
-#             submissions__supervisor_id__isnull=True,
-#             submissions__status="pending_supervisor"
-#         ).distinct()
-
-#         def serialize_items_with_details(qs):
-#             out = []
-#             for item in qs:
-#                 item_data = ChecklistItemSerializer(item).data
-
-#                 latest_sub = ChecklistItemSubmission.objects.filter(
-#                     checklist_item=item
-#                 ).order_by('-attempts', '-created_at').first()
-
-#                 item_data["latest_submission"] = (
-#                     ChecklistItemSubmissionSerializer(latest_sub).data
-#                     if latest_sub else None
-#                 )
-
-#                 options = ChecklistItemOption.objects.filter(checklist_item=item)
-#                 item_data["options"] = ChecklistItemOptionSerializer(options, many=True).data
-
-#                 out.append(item_data)
-#             return out
-
-#         response = {
-#             "pending_for_me": serialize_items_with_details(assigned_to_me),
-#             "available_for_me": serialize_items_with_details(available_for_me),
-#         }
-#         print(response)
-#         return Response(response, status=200)
-
+    def get(self, request):
+        user_id = request.user.id
+        queryset = ChecklistItemSubmission.objects.filter(
+            status="IN_PROGRESS",
+            user=user_id,
+            selected_option__isnull=True
+        )
+        serializer = ChecklistItemSubmissionSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 # Newwww
 class PendingForSupervisorItemsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
-
+    # USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+    USER_SERVICE_URL = "https://{local}:8000/api/user-access/"
     def get(self, request):
         user_id = request.user.id
         project_id = request.query_params.get("project_id")
@@ -2010,162 +1723,6 @@ class PendingForSupervisorItemsAPIView(APIView):
         }
 
         return Response(response, status=200)
-
-
-# class PendingForMakerItemsAPIView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-#     USER_SERVICE_URL = "http://192.168.16.214:8000/api/user-access/"
-
-#     def get(self, request):
-#         user_id = request.user.id
-#         project_id = request.query_params.get("project_id")
-
-#         if not user_id or not project_id:
-# return Response({"detail": "user_id and project_id required."},
-# status=400)
-
-#         # ---- Fetch access as in your code ----
-#         token = None
-#         auth_header = request.headers.get("Authorization")
-#         if auth_header:
-#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-
-#         headers = {}
-#         if token:
-#             headers["Authorization"] = f"Bearer {token}"
-
-#         try:
-#             resp = requests.get(
-#                 self.USER_SERVICE_URL,
-#                 params={"user_id": user_id, "project_id": project_id},
-#                 timeout=5,
-#                 headers=headers
-#             )
-#             if resp.status_code != 200:
-#                 return Response({"detail": "Could not fetch user access"}, status=400)
-#             accesses = resp.json()
-#         except Exception as e:
-# return Response({"detail": "User service error", "error": str(e)},
-# status=400)
-
-#         q = Q()
-#         for access in accesses:
-#             cat_q = Q()
-#             if access.get('category'):
-#                 cat_q &= Q(category=access['category'])
-#                 for i in range(1, 7):
-#                     key = f'CategoryLevel{i}'
-#                     if access.get(key) is not None:
-#                         cat_q &= Q(**{f'category_level{i}': access[key]})
-#                     else:
-#                         break
-#             loc_q = Q()
-#             if access.get('flat_id'):
-#                 loc_q &= Q(flat_id=access['flat_id'])
-#             elif access.get('zone_id'):
-#                 loc_q &= Q(zone_id=access['zone_id'])
-#             elif access.get('building_id'):
-#                 loc_q &= Q(building_id=access['building_id'])
-#             q |= (cat_q & loc_q)
-
-#         items = ChecklistItem.objects.filter(
-#             checklist__project_id=project_id,
-#             checklist__in=Checklist.objects.filter(q),
-#             status="pending_for_maker"
-#         ).filter(
-#             Exists(
-#                 ChecklistItemSubmission.objects.filter(
-#                     checklist_item=OuterRef('pk'),
-#                     status="created",
-#                     checker_id__isnull=False,
-#                     maker_id__isnull=True
-#                 )
-#             )
-#         ).select_related('checklist').prefetch_related('submissions', 'options')
-
-#         serializer = ChecklistItemSerializer(items, many=True)
-#         # print(serializer.data)
-#         return Response(serializer.data, status=200)
-
-
-# class Rework_MakerChecklistItemsAPIView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-#     USER_SERVICE_URL = "http://192.168.16.214:8000/api/user-access/"
-
-#     def get(self, request):
-#         user_id = request.user.id
-#         project_id = request.query_params.get("project_id")
-
-#         if not user_id or not project_id:
-# return Response({"detail": "user_id and project_id required."},
-# status=400)
-
-#         token = None
-#         auth_header = request.headers.get("Authorization")
-#         if auth_header:
-#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-
-#         headers = {}
-#         if token:
-#             headers["Authorization"] = f"Bearer {token}"
-
-#         try:
-#             import requests
-#             resp = requests.get(
-#                 self.USER_SERVICE_URL,
-#                 params={"user_id": user_id, "project_id": project_id},
-#                 timeout=5,
-#                 headers=headers
-#             )
-#             if resp.status_code != 200:
-#                 return Response({"detail": "Could not fetch user access"}, status=400)
-#             accesses = resp.json()
-#         except Exception as e:
-# return Response({"detail": "User service error", "error": str(e)},
-# status=400)
-
-#         q = Q()
-#         for access in accesses:
-#             cat_q = Q()
-#             if access.get('category'):
-#                 cat_q &= Q(category=access['category'])
-#                 for i in range(1, 7):
-#                     key = f'CategoryLevel{i}'
-#                     if access.get(key) is not None:
-#                         cat_q &= Q(**{f'category_level{i}': access[key]})
-#                     else:
-#                         break
-#             loc_q = Q()
-#             if access.get('flat_id'):
-#                 loc_q &= Q(flat_id=access['flat_id'])
-#             elif access.get('zone_id'):
-#                 loc_q &= Q(zone_id=access['zone_id'])
-#             elif access.get('building_id'):
-#                 loc_q &= Q(building_id=access['building_id'])
-#             q |= (cat_q & loc_q)
-
-#         items = ChecklistItem.objects.filter(
-#             checklist__project_id=project_id,
-#             checklist__in=Checklist.objects.filter(q),
-#             status="pending_for_maker"
-#         ).filter(
-#             Exists(
-#                 ChecklistItemSubmission.objects.filter(
-#                     checklist_item=OuterRef('pk'),
-#                     status="created",
-#                     checker_id__isnull=False,
-#                     maker_id=user_id
-#                 )
-#             )
-#         ).distinct()
-
-#         from .serializers import ChecklistItemSerializer
-#         serializer = ChecklistItemSerializer(items, many=True)
-#         return Response(serializer.data, status=200)
-
-
-# end here
-
 
 class StartChecklistItemAPIView(APIView):
     def post(self, request, user_id, item_id):
@@ -2411,8 +1968,8 @@ class ChecklistItemByCategoryStatusView(APIView):
 
 class AccessibleChecklistsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
-
+    # USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+    USER_SERVICE_URL = "https://{local}:8000/api/user-access/"
     def get(self, request):
         user_id = request.user.id
         project_id = request.query_params.get("project_id")
@@ -2484,100 +2041,11 @@ class AccessibleChecklistsAPIView(APIView):
         return Response(serializer.data, status=200)
 
 
-class MyInProgressChecklistItemSubmissions(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        user_id = request.user.id
-        queryset = ChecklistItemSubmission.objects.filter(
-            status="IN_PROGRESS",
-            user=user_id,
-            selected_option__isnull=True
-        )
-        serializer = ChecklistItemSubmissionSerializer(queryset, many=True)
-        return Response(serializer.data)
-
-
-# from .models import Checklist, ChecklistItem, ChecklistItemSubmission
-# from .serializers import ChecklistItemSubmissionSerializer
-
-# class AccessibleChecklistsWithPendingCheckerSubmissionsAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
-
-#     def get(self, request):
-#         user_id = request.user.id
-#         project_id = request.query_params.get("project_id")
-
-#         # A. By roles_json.checker assignment
-#         assigned_checklists = Checklist.objects.filter(roles_json__checker__contains=[user_id])
-#         assigned_submissions = ChecklistItemSubmission.objects.filter(
-#             checklist_item__checklist__in=assigned_checklists,
-#             checked_by_id__isnull=True,
-#             status="DONE"
-#         )
-
-#         # B. By access (location/category)
-#         location_submissions = ChecklistItemSubmission.objects.none()
-#         if project_id:
-#             token = None
-#             auth_header = request.headers.get("Authorization")
-#             if auth_header:
-#                 token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-#             headers = {}
-#             if token:
-#                 headers["Authorization"] = f"Bearer {token}"
-#             try:
-#                 resp = requests.get(
-#                     self.USER_SERVICE_URL,
-#                     params={"user_id": user_id, "project_id": project_id},
-#                     timeout=5,
-#                     headers=headers
-#                 )
-#                 if resp.status_code == 200:
-#                     accesses = resp.json()
-#                     q = Q()
-#                     for access in accesses:
-#                         cat_q = Q()
-#                         if access.get('category'):
-#                             cat_q &= Q(checklist__category=access['category'])
-#                             for i in range(1, 7):
-#                                 key = f'CategoryLevel{i}'
-#                                 if access.get(key) is not None:
-#                                     cat_q &= Q(**{f'checklist__category_level{i}': access[key]})
-#                                 else:
-#                                     break
-#                         loc_q = Q()
-#                         if access.get('flat_id'):
-#                             loc_q &= Q(checklist__flat_id=access['flat_id'])
-#                         elif access.get('zone_id'):
-#                             loc_q &= Q(checklist__zone_id=access['zone_id'])
-#                         elif access.get('building_id'):
-#                             loc_q &= Q(checklist__building_id=access['building_id'])
-#                         q |= (cat_q & loc_q)
-#                     checklist_items = ChecklistItem.objects.filter(status="DONE")
-#                     if q:
-#                         location_submissions = ChecklistItemSubmission.objects.filter(
-#                             checklist_item__in=checklist_items.filter(q),
-#                             checked_by_id__isnull=True,
-#                             status="DONE"
-#                         )
-#             except Exception as e:
-#                 # Log or handle the error as needed
-#                 pass
-
-#         # Merge both querysets, deduplicate, and order
-#         all_submissions = assigned_submissions | location_submissions
-#         all_submissions = all_submissions.distinct().order_by("-accepted_at")
-
-#         serializer = ChecklistItemSubmissionSerializer(all_submissions, many=True)
-#         return Response(serializer.data)
-
-
+# class MyInProgressChecklistItemSubmissions(APIView):
 class AccessibleChecklistsWithPendingCheckerSubmissionsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
-
+    # USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+    USER_SERVICE_URL = "https://{local}:8000/api/user-access/"
     def get(self, request):
         user_id = request.user.id
         project_id = request.query_params.get("project_id")
@@ -2728,11 +2196,6 @@ class PatchChecklistItemSubmissionAPIView(APIView):
                 "status": item.status,
             }, status=200)
 
-
-# Replace your MyHierarchicalVerificationsAPIView with this:
-
-# Replace your MyHierarchicalVerificationsAPIView with this FINAL
-# corrected version:
 
 class MyHierarchicalVerificationsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -3212,6 +2675,570 @@ class PatchChecklistRolesJsonAPIView(APIView):
         checklist.save(update_fields=['roles_json'])
         return Response({'message': 'roles_json updated.',
                         'roles_json': checklist.roles_json}, status=200)
+
+# Replace your MyHierarchicalVerificationsAPIView with this:
+
+# Replace your MyHierarchicalVerificationsAPIView with this FINAL
+# corrected version:
+
+# class PendingForMakerItemsAPIView(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+#     USER_SERVICE_URL = "http://192.168.16.214:8000/api/user-access/"
+
+#     def get(self, request):
+#         user_id = request.user.id
+#         project_id = request.query_params.get("project_id")
+
+#         if not user_id or not project_id:
+# return Response({"detail": "user_id and project_id required."},
+# status=400)
+
+#         # ---- Fetch access as in your code ----
+#         token = None
+#         auth_header = request.headers.get("Authorization")
+#         if auth_header:
+#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+
+#         headers = {}
+#         if token:
+#             headers["Authorization"] = f"Bearer {token}"
+
+#         try:
+#             resp = requests.get(
+#                 self.USER_SERVICE_URL,
+#                 params={"user_id": user_id, "project_id": project_id},
+#                 timeout=5,
+#                 headers=headers
+#             )
+#             if resp.status_code != 200:
+#                 return Response({"detail": "Could not fetch user access"}, status=400)
+#             accesses = resp.json()
+#         except Exception as e:
+# return Response({"detail": "User service error", "error": str(e)},
+# status=400)
+
+#         q = Q()
+#         for access in accesses:
+#             cat_q = Q()
+#             if access.get('category'):
+#                 cat_q &= Q(category=access['category'])
+#                 for i in range(1, 7):
+#                     key = f'CategoryLevel{i}'
+#                     if access.get(key) is not None:
+#                         cat_q &= Q(**{f'category_level{i}': access[key]})
+#                     else:
+#                         break
+#             loc_q = Q()
+#             if access.get('flat_id'):
+#                 loc_q &= Q(flat_id=access['flat_id'])
+#             elif access.get('zone_id'):
+#                 loc_q &= Q(zone_id=access['zone_id'])
+#             elif access.get('building_id'):
+#                 loc_q &= Q(building_id=access['building_id'])
+#             q |= (cat_q & loc_q)
+
+#         items = ChecklistItem.objects.filter(
+#             checklist__project_id=project_id,
+#             checklist__in=Checklist.objects.filter(q),
+#             status="pending_for_maker"
+#         ).filter(
+#             Exists(
+#                 ChecklistItemSubmission.objects.filter(
+#                     checklist_item=OuterRef('pk'),
+#                     status="created",
+#                     checker_id__isnull=False,
+#                     maker_id__isnull=True
+#                 )
+#             )
+#         ).select_related('checklist').prefetch_related('submissions', 'options')
+
+#         serializer = ChecklistItemSerializer(items, many=True)
+#         # print(serializer.data)
+#         return Response(serializer.data, status=200)
+
+
+# class Rework_MakerChecklistItemsAPIView(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+#     USER_SERVICE_URL = "http://192.168.16.214:8000/api/user-access/"
+
+#     def get(self, request):
+#         user_id = request.user.id
+#         project_id = request.query_params.get("project_id")
+
+#         if not user_id or not project_id:
+# return Response({"detail": "user_id and project_id required."},
+# status=400)
+
+#         token = None
+#         auth_header = request.headers.get("Authorization")
+#         if auth_header:
+#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+
+#         headers = {}
+#         if token:
+#             headers["Authorization"] = f"Bearer {token}"
+
+#         try:
+#             import requests
+#             resp = requests.get(
+#                 self.USER_SERVICE_URL,
+#                 params={"user_id": user_id, "project_id": project_id},
+#                 timeout=5,
+#                 headers=headers
+#             )
+#             if resp.status_code != 200:
+#                 return Response({"detail": "Could not fetch user access"}, status=400)
+#             accesses = resp.json()
+#         except Exception as e:
+# return Response({"detail": "User service error", "error": str(e)},
+# status=400)
+
+#         q = Q()
+#         for access in accesses:
+#             cat_q = Q()
+#             if access.get('category'):
+#                 cat_q &= Q(category=access['category'])
+#                 for i in range(1, 7):
+#                     key = f'CategoryLevel{i}'
+#                     if access.get(key) is not None:
+#                         cat_q &= Q(**{f'category_level{i}': access[key]})
+#                     else:
+#                         break
+#             loc_q = Q()
+#             if access.get('flat_id'):
+#                 loc_q &= Q(flat_id=access['flat_id'])
+#             elif access.get('zone_id'):
+#                 loc_q &= Q(zone_id=access['zone_id'])
+#             elif access.get('building_id'):
+#                 loc_q &= Q(building_id=access['building_id'])
+#             q |= (cat_q & loc_q)
+
+#         items = ChecklistItem.objects.filter(
+#             checklist__project_id=project_id,
+#             checklist__in=Checklist.objects.filter(q),
+#             status="pending_for_maker"
+#         ).filter(
+#             Exists(
+#                 ChecklistItemSubmission.objects.filter(
+#                     checklist_item=OuterRef('pk'),
+#                     status="created",
+#                     checker_id__isnull=False,
+#                     maker_id=user_id
+#                 )
+#             )
+#         ).distinct()
+
+#         from .serializers import ChecklistItemSerializer
+#         serializer = ChecklistItemSerializer(items, many=True)
+#         return Response(serializer.data, status=200)
+
+
+# end here
+
+
+
+        # print("Returning success response with item and submission data.")
+        # return Response({
+        #     "item": item_data,
+        #     "submission": submission_data
+        # }, status=200)
+
+
+
+# class CheckerInprogressAccessibleChecklists(APIView):
+#     permission_classes = [IsAuthenticated]
+#     USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+
+#     def get(self, request):
+#         user_id = request.user.id
+#         project_id = request.query_params.get("project_id")
+#         if not user_id or not project_id:
+# return Response({"detail": "user_id and project_id required."},
+# status=400)
+
+#         # --- Fetch user access
+#         token = None
+#         auth_header = request.headers.get("Authorization")
+#         if auth_header:
+#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+#         headers = {}
+#         if token:
+#             headers["Authorization"] = f"Bearer {token}"
+
+#         try:
+#             resp = requests.get(
+#                 self.USER_SERVICE_URL,
+#                 params={"user_id": user_id, "project_id": project_id},
+#                 timeout=5,
+#                 headers=headers
+#             )
+#             if resp.status_code != 200:
+#                 return Response({"detail": "Could not fetch user access"}, status=400)
+#             accesses = resp.json()
+#         except Exception as e:
+# return Response({"detail": "User service error", "error": str(e)},
+# status=400)
+
+#         q = Q()
+#         for access in accesses:
+#             cat_q = Q()
+#             if access.get('category'):
+#                 cat_q &= Q(category=access['category'])
+#                 for i in range(1, 7):
+#                     key = f'CategoryLevel{i}'
+#                     if access.get(key) is not None:
+#                         cat_q &= Q(**{f'category_level{i}': access[key]})
+#                     else:
+#                         break
+#             loc_q = Q()
+#             if access.get('flat_id'):
+#                 loc_q &= Q(flat_id=access['flat_id'])
+#             elif access.get('zone_id'):
+#                 loc_q &= Q(zone_id=access['zone_id'])
+#             elif access.get('building_id'):
+#                 loc_q &= Q(building_id=access['building_id'])
+#             q |= (cat_q & loc_q)
+
+
+#         assigned_item_exists = ChecklistItem.objects.filter(
+#             checklist=OuterRef('pk'),
+#             status="pending_for_inspector",
+#             submissions__checker_id=user_id,
+#             submissions__status="pending_checker"
+#         )
+
+
+#         available_item_exists = ChecklistItem.objects.filter(
+#             checklist=OuterRef('pk'),
+#             status="pending_for_inspector",
+#             # submissions__status="pending_checker",
+#             submissions__checker_id__isnull=True
+#         )
+
+#         base_qs = Checklist.objects.filter(project_id=project_id)
+#         if q:
+#             base_qs = base_qs.filter(q).distinct()
+#         else:
+#             base_qs = Checklist.objects.none()
+
+#         assigned_to_me = base_qs.annotate(
+#             has_assigned=Exists(assigned_item_exists)
+#         ).filter(has_assigned=True)
+
+#         available_for_me = base_qs.annotate(
+#             has_available=Exists(available_item_exists)
+#         ).filter(has_available=True)
+
+
+#         response = {
+#             "assigned_to_me": ChecklistWithItemsAndSubmissionsSerializer(assigned_to_me, many=True).data,
+#             "available_for_me": ChecklistWithItemsAndSubmissionsSerializer(available_for_me, many=True).data
+#         }
+#         print(response)
+#         return Response(response, status=200)
+
+
+
+# class PendingForMakerItemsAPIView(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+#     USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+
+#     def get(self, request):
+#         user_id = request.user.id
+#         project_id = request.query_params.get("project_id")
+#         if not user_id or not project_id:
+# return Response({"detail": "user_id and project_id required."},
+# status=400)
+
+#         # --- Fetch user access
+#         token = None
+#         auth_header = request.headers.get("Authorization")
+#         if auth_header:
+#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+#         headers = {}
+#         if token:
+#             headers["Authorization"] = f"Bearer {token}"
+#         try:
+#             resp = requests.get(
+#                 self.USER_SERVICE_URL,
+#                 params={"user_id": user_id, "project_id": project_id},
+#                 timeout=5,
+#                 headers=headers
+#             )
+#             if resp.status_code != 200:
+#                 return Response({"detail": "Could not fetch user access"}, status=400)
+#             accesses = resp.json()
+#         except Exception as e:
+# return Response({"detail": "User service error", "error": str(e)},
+# status=400)
+
+#         q = Q()
+#         for access in accesses:
+#             cat_q = Q()
+#             if access.get('category'):
+#                 cat_q &= Q(category=access['category'])
+#                 for i in range(1, 7):
+#                     key = f'CategoryLevel{i}'
+#                     if access.get(key) is not None:
+#                         cat_q &= Q(**{f'category_level{i}': access[key]})
+#                     else:
+#                         break
+#             loc_q = Q()
+#             if access.get('flat_id'):
+#                 loc_q &= Q(flat_id=access['flat_id'])
+#             elif access.get('zone_id'):
+#                 loc_q &= Q(zone_id=access['zone_id'])
+#             elif access.get('building_id'):
+#                 loc_q &= Q(building_id=access['building_id'])
+#             q |= (cat_q & loc_q)
+
+#         # Subquery to get latest submission id for each item
+#         latest_submission_subq = ChecklistItemSubmission.objects.filter(
+#             checklist_item=OuterRef('pk')
+#         ).order_by('-attempts', '-created_at').values('id')[:1]
+
+
+#         items = ChecklistItem.objects.filter(
+#             checklist__project_id=project_id,
+#             checklist__in=Checklist.objects.filter(q),
+#             status="pending_for_maker"
+#         )
+
+#         print(items)
+#         base_items = ChecklistItem.objects.filter(
+#             checklist__project_id=project_id,
+#             checklist__in=Checklist.objects.filter(q),
+#             status="pending_for_maker"
+#         ).annotate(
+#             latest_submission_id=Subquery(latest_submission_subq)
+#         )
+
+#         # 1. Rework items assigned to this maker
+#         rework_items = base_items.filter(
+#             submissions__id=F('latest_submission_id'),
+#             submissions__maker_id=user_id,
+#             submissions__status="created"
+#         ).distinct()
+
+#         # 2. Fresh items not yet picked up by any maker
+#         fresh_items = base_items.filter(
+#             submissions__id=F('latest_submission_id'),
+#             submissions__maker_id__isnull=True,
+#             submissions__status="created"
+#         ).distinct()
+
+#         # Combine or keep them separate as per your use-case
+#         # Here, returning as two lists for clarity
+#         def serialize_items_with_submission(qs):
+#             out = []
+#             for item in qs:
+#                 item_data = ChecklistItemSerializer(item).data
+#                 # Attach latest submission details if available
+#                 latest_sub = ChecklistItemSubmission.objects.filter(
+#                     checklist_item=item
+#                 ).order_by('-attempts', '-created_at').first()
+#                 item_data["latest_submission"] = (
+#                     ChecklistItemSubmissionSerializer(latest_sub).data
+#                     if latest_sub else None
+#                 )
+#                 out.append(item_data)
+#             return out
+
+#         response = {
+#             "assigned_to_me": serialize_items_with_submission(rework_items),
+#             "available_for_me": serialize_items_with_submission(fresh_items),
+#         }
+#         print(response)
+#         return Response(response, status=200)
+
+# Newwww
+
+# class PendingForSupervisorItemsAPIView(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+#     USER_SERVICE_URL = "https://konstruct.world/users/user-access/"
+
+#     def get(self, request):
+#         user_id = request.user.id
+#         project_id = request.query_params.get("project_id")
+
+#         if not user_id or not project_id:
+# return Response({"detail": "user_id and project_id required."},
+# status=400)
+
+#         # Fetch user access
+#         token = None
+#         auth_header = request.headers.get("Authorization")
+#         if auth_header:
+#             token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+
+#         headers = {}
+#         if token:
+#             headers["Authorization"] = f"Bearer {token}"
+
+#         try:
+#             resp = requests.get(
+#                 self.USER_SERVICE_URL,
+#                 params={"user_id": user_id, "project_id": project_id},
+#                 timeout=5,
+#                 headers=headers
+#             )
+#             if resp.status_code != 200:
+#                 return Response({"detail": "Could not fetch user access"}, status=400)
+#             accesses = resp.json()
+#         except Exception as e:
+# return Response({"detail": "User service error", "error": str(e)},
+# status=400)
+
+#         q = Q()
+#         for access in accesses:
+#             cat_q = Q()
+#             if access.get('category'):
+#                 cat_q &= Q(category=access['category'])
+#                 for i in range(1, 7):
+#                     key = f'CategoryLevel{i}'
+#                     if access.get(key) is not None:
+#                         cat_q &= Q(**{f'category_level{i}': access[key]})
+#                     else:
+#                         break
+
+#             loc_q = Q()
+#             if access.get('flat_id'):
+#                 loc_q &= Q(flat_id=access['flat_id'])
+#             elif access.get('zone_id'):
+#                 loc_q &= Q(zone_id=access['zone_id'])
+#             elif access.get('building_id'):
+#                 loc_q &= Q(building_id=access['building_id'])
+
+#             q |= (cat_q & loc_q)
+
+#         latest_submission_subq = ChecklistItemSubmission.objects.filter(
+#             checklist_item=OuterRef('pk')
+#         ).order_by('-attempts', '-created_at').values('id')[:1]
+
+#         base_items = ChecklistItem.objects.filter(
+#             checklist__project_id=project_id,
+#             checklist__in=Checklist.objects.filter(q),
+#             status="pending_for_supervisor"
+#         ).annotate(
+#             latest_submission_id=Subquery(latest_submission_subq)
+#         )
+
+#         assigned_to_me = base_items.filter(
+#             submissions__id=F('latest_submission_id'),
+#             submissions__supervisor_id=user_id,
+#             submissions__status="pending_supervisor"
+#         ).distinct()
+
+#         available_for_me = base_items.filter(
+#             submissions__id=F('latest_submission_id'),
+#             submissions__supervisor_id__isnull=True,
+#             submissions__status="pending_supervisor"
+#         ).distinct()
+
+#         def serialize_items_with_details(qs):
+#             out = []
+#             for item in qs:
+#                 item_data = ChecklistItemSerializer(item).data
+
+#                 latest_sub = ChecklistItemSubmission.objects.filter(
+#                     checklist_item=item
+#                 ).order_by('-attempts', '-created_at').first()
+
+#                 item_data["latest_submission"] = (
+#                     ChecklistItemSubmissionSerializer(latest_sub).data
+#                     if latest_sub else None
+#                 )
+
+#                 options = ChecklistItemOption.objects.filter(checklist_item=item)
+#                 item_data["options"] = ChecklistItemOptionSerializer(options, many=True).data
+
+#                 out.append(item_data)
+#             return out
+
+#         response = {
+#             "pending_for_me": serialize_items_with_details(assigned_to_me),
+#             "available_for_me": serialize_items_with_details(available_for_me),
+#         }
+#         print(response)
+#         return Response(response, status=200)
+
+
+
+# from .models import Checklist, ChecklistItem, ChecklistItemSubmission
+# from .serializers import ChecklistItemSubmissionSerializer
+
+# class AccessibleChecklistsWithPendingCheckerSubmissionsAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     USER_SERVICE_URL = "http://192.168.1.28:8000/api/user-access/"
+
+#     def get(self, request):
+#         user_id = request.user.id
+#         project_id = request.query_params.get("project_id")
+
+#         # A. By roles_json.checker assignment
+#         assigned_checklists = Checklist.objects.filter(roles_json__checker__contains=[user_id])
+#         assigned_submissions = ChecklistItemSubmission.objects.filter(
+#             checklist_item__checklist__in=assigned_checklists,
+#             checked_by_id__isnull=True,
+#             status="DONE"
+#         )
+
+#         # B. By access (location/category)
+#         location_submissions = ChecklistItemSubmission.objects.none()
+#         if project_id:
+#             token = None
+#             auth_header = request.headers.get("Authorization")
+#             if auth_header:
+#                 token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+#             headers = {}
+#             if token:
+#                 headers["Authorization"] = f"Bearer {token}"
+#             try:
+#                 resp = requests.get(
+#                     self.USER_SERVICE_URL,
+#                     params={"user_id": user_id, "project_id": project_id},
+#                     timeout=5,
+#                     headers=headers
+#                 )
+#                 if resp.status_code == 200:
+#                     accesses = resp.json()
+#                     q = Q()
+#                     for access in accesses:
+#                         cat_q = Q()
+#                         if access.get('category'):
+#                             cat_q &= Q(checklist__category=access['category'])
+#                             for i in range(1, 7):
+#                                 key = f'CategoryLevel{i}'
+#                                 if access.get(key) is not None:
+#                                     cat_q &= Q(**{f'checklist__category_level{i}': access[key]})
+#                                 else:
+#                                     break
+#                         loc_q = Q()
+#                         if access.get('flat_id'):
+#                             loc_q &= Q(checklist__flat_id=access['flat_id'])
+#                         elif access.get('zone_id'):
+#                             loc_q &= Q(checklist__zone_id=access['zone_id'])
+#                         elif access.get('building_id'):
+#                             loc_q &= Q(checklist__building_id=access['building_id'])
+#                         q |= (cat_q & loc_q)
+#                     checklist_items = ChecklistItem.objects.filter(status="DONE")
+#                     if q:
+#                         location_submissions = ChecklistItemSubmission.objects.filter(
+#                             checklist_item__in=checklist_items.filter(q),
+#                             checked_by_id__isnull=True,
+#                             status="DONE"
+#                         )
+#             except Exception as e:
+#                 # Log or handle the error as needed
+#                 pass
+
+#         # Merge both querysets, deduplicate, and order
+#         all_submissions = assigned_submissions | location_submissions
+#         all_submissions = all_submissions.distinct().order_by("-accepted_at")
+
+#         serializer = ChecklistItemSubmissionSerializer(all_submissions, many=True)
+#         return Response(serializer.data)
+
 
 
 # from rest_framework.permissions import IsAuthenticated

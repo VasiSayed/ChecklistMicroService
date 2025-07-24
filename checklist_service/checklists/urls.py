@@ -25,8 +25,8 @@ urlpatterns = [
         views.AccessibleChecklistsAPIView.as_view(),
         name='accessible-checklists'),
     # path('accessible-checklists-In-progress/', views.AccessibleChecklistsInProgressAPIView.as_view(), name='accessible-checklists-in-progress'),
-    path('my-inprogress-checklistitem-submissions/',
-         views.MyInProgressChecklistItemSubmissions.as_view()),
+    # path('my-inprogress-checklistitem-submissions/',
+    #      views.MyInProgressChecklistItemSubmissions.as_view()),
     path(
         "accessible-checklists-unreviewed/",
         views.AccessibleChecklistsWithPendingCheckerSubmissionsAPIView.as_view(),
@@ -83,7 +83,6 @@ urlpatterns = [
         views.IntializeChechklistView.as_view(),
         name='start-checklist'),
 
-    # Inspector CHehcklist
     path(
         'Chechker-New-checklist/',
         views.CheckerInprogressAccessibleChecklists.as_view(),
@@ -96,7 +95,6 @@ urlpatterns = [
         name='Decision_api'),
 
 
-    # for maker
     path(
         'pending-for-maker/',
         views.PendingForMakerItemsAPIView.as_view(),
@@ -107,13 +105,11 @@ urlpatterns = [
         name="MArker_save"),
 
 
-    # for supervisor
     path(
         'Supervisor-Pending-work/',
         views.PendingForSupervisorItemsAPIView.as_view(),
         name="pending-supervsiorr-view"),
 
-    # for checklist for all units
     path('create/unit-chechklist/',
          views.CreateChecklistforUnit.as_view(),
          name='create-checklist-for-unit'),

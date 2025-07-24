@@ -21,6 +21,9 @@ class Checklist(models.Model):
     zone_id = models.IntegerField(null=True, blank=True)
     room_id = models.IntegerField(null=True, blank=True)
     flat_id = models.IntegerField(null=True, blank=True)
+    subzone_id = models.IntegerField(null=True, blank=True)   # <-- add this
+    level_id = models.IntegerField(null=True, blank=True)     # <-- add this (floor)
+
     purpose_id = models.IntegerField()
     phase_id = models.IntegerField(null=True, blank=True)
     stage_id = models.IntegerField(null=True, blank=True)
@@ -32,9 +35,7 @@ class Checklist(models.Model):
     category_level4 = models.IntegerField(null=True, blank=True)
     category_level5 = models.IntegerField(null=True, blank=True)
     category_level6 = models.IntegerField(null=True, blank=True)
-
     remarks = models.TextField(blank=True)
-
     created_by_id = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

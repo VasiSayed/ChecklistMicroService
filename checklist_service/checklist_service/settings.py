@@ -64,9 +64,7 @@ SECRET_KEY = env('SECRET_KEY')
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+STATICFILES_DIRS = []
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/media/'
@@ -97,6 +95,9 @@ CORS_ALLOWED_ORIGINS = [
     # "http://192.168.1.23.214:8002",  # Microservice 2 on your machine
     # "http://192.168.1.23.214:8000",  # Microservice 3 on your machine
 
+    "http://192.168.29.239:8000",  # Microservice 1 on your machine
+    "http://192.168.29.239:8001",  # Microservice 2 on your machine
+    "http://192.168.29.239:8002",
 
     "http:// 192.168.78.214:3000",
     "http:// 192.168.78.214:3000",
@@ -217,7 +218,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
